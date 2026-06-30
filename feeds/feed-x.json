@@ -11,7 +11,7 @@
           "text": "Introducing Claude Tag, a new way for teams to work with Claude.\n\nIn Slack, Claude joins as a team member with access to the channels and tools you choose. Tag Claude in and delegate tasks to it while you focus on other work. https://t.co/R2C6A5Kcye",
           "created_at": "2026-06-23T17:12:39+00:00",
           "like_count": 28331,
-          "retweet_count": 2157,
+          "retweet_count": 2158,
           "reply_count": 1600,
           "url": "https://x.com/claudeai/status/2069468693017268244"
         },
@@ -19,9 +19,9 @@
           "id": "2069547676849557725",
           "text": "This is a new paradigm for interacting with Claude that is significantly more \"inline\" with all the other human activity org-wide. Once you do all of the under the hood engineering work to make this \"just work\" (e.g. across tools, integrations, compute environments, memory, security, etc.), Claude basically joins the team in a seamless way - you can talk to it as you would talk to a person and it can help with a very large variety of workloads.\n\nImo this is the 3rd major redesign of LLM UIUX. The first paradigm was that the LLM is a website you go to, the second was that it is an app you download to your computer. This third one is that it is a self-contained, persistent, asynchronous entity with org-wide tools and context, working alongside teams of humans. It really takes a while to wrap your head around it, but it works and it is awesome.",
           "created_at": "2026-06-23T22:26:31+00:00",
-          "like_count": 22767,
+          "like_count": 22770,
           "retweet_count": 1883,
-          "reply_count": 1255,
+          "reply_count": 1256,
           "url": "https://x.com/karpathy/status/2069547676849557725"
         },
         {
@@ -29,7 +29,7 @@
           "text": "The basic idea is easy and v0 is a hackathon project. The product here is a lot closer to *it actually works*, for enterprise grade deployments, and after quite a bit of internal experimentation and iteration. It’s kind of hard to describe other than (per the post) it’s writing majority of code, it’s deeply integrated, multiplayer, and it starts to feel like everyone is a manager. So I understand it looks easy to dismiss on quick reading but it’s not some LLM Q&A with RAG over Slack, it’s not even OpenClaw adjacent, it’s a different way of working entirely, for people and teams. I work from Slack now.",
           "created_at": "2026-06-24T02:01:39+00:00",
           "like_count": 1633,
-          "retweet_count": 51,
+          "retweet_count": 52,
           "reply_count": 121,
           "url": "https://x.com/karpathy/status/2069601818540392669"
         },
@@ -137,7 +137,7 @@
           "id": "2070607488274358364",
           "text": "Good new first: Sol is a smart, efficient, and a significant step forward. It is the same price as GPT-5.5. Also launching in the GPT-5.6 family is Terra, with 5.5-level performance at half the price.\n\nBad news: at the request of the US government, it is launching today in limited preview instead of the open access launch we were planning on. We are working with the government to get to general availability as fast as we can.\n\nI think it is quite reasonable to roll out models--especially as they reach significant new levels of capability--in this way. It fits with our long-held strategy of iterative deployment. But this isn't quite the process that we think is optimal.\n\nNow we will with the government to attempt to get to a transparent, reliable process for early access, and to ensure that as long as our safeguards work as intended we can release widely. We want to be a reliable, dependable partner that works with all stakeholders, and we also want to live by our mission of benefiting all of humanity. I believe the government shares most of our goals, and that they are overall doing a good job in a very difficult situation.\n\nWe will work as quickly as we can to get this model in your hands and we hope you will love it.",
           "created_at": "2026-06-26T20:37:49+00:00",
-          "like_count": 18340,
+          "like_count": 18341,
           "retweet_count": 1126,
           "reply_count": 1904,
           "url": "https://x.com/sama/status/2070607488274358364"
@@ -146,7 +146,7 @@
           "id": "2070612055225483692",
           "text": "in other news, we updated the 5.5 instant model used in chatgpt this week.\n\ni like its vibes.",
           "created_at": "2026-06-26T20:55:58+00:00",
-          "like_count": 6321,
+          "like_count": 6322,
           "retweet_count": 139,
           "reply_count": 548,
           "url": "https://x.com/sama/status/2070612055225483692"
@@ -155,7 +155,7 @@
           "id": "2070614666288795703",
           "text": "team cooked, spicily",
           "created_at": "2026-06-26T21:06:21+00:00",
-          "like_count": 4780,
+          "like_count": 4781,
           "retweet_count": 151,
           "reply_count": 343,
           "url": "https://x.com/sama/status/2070614666288795703"
@@ -164,8 +164,8 @@
           "id": "2070609922631537024",
           "text": "oh and also...750 token/sec coming to 5.6 sol in july!",
           "created_at": "2026-06-26T20:47:30+00:00",
-          "like_count": 3732,
-          "retweet_count": 128,
+          "like_count": 3734,
+          "retweet_count": 129,
           "reply_count": 197,
           "url": "https://x.com/sama/status/2070609922631537024"
         }
@@ -244,18 +244,18 @@
           "id": "2071379474277613732",
           "text": "As engineering, product, design, DS, etc. melt into a new kind of role, I was reflecting on what roles might look like in the future. For example, when I look at the Claude Code team I see what I think is five archetypes:\n\n1. Prototyper: comes up with brand new ideas; churns out many ideas, most of which don't ship\n2. Builder: quickly turns a prototype/idea into production-grade product/infra\n3. Sweeper: cleans up the UI, simplifies the code and system, unships, optimizes performance\n4. Grower: takes a product that has been built and iterates on it to improve Product-Market Fit\n5. Maintainer: owns a mature system to make it secure, reliable, fast, and efficient as it scales\n\nMany people span across 2 roles, and sometimes 3 roles. I also notice that these roles are not really tied to job function -- eg. across Anthropic, some designers match category 1, some 2, some 3; same for engineers, PM, DS.\n\nA healthy team needs a mix of these, depending on the product:\n\n- A product that is new and pre-PMF needs people that are strong at 1+2+3\n- A product that is growing and has found PMF needs 2+3+4 and some 5\n- A product that has strong PMF needs 3+4+5 and some 2\n\nMaybe product roles of the future will look more like this, and less like the domain-specific roles of today?",
           "created_at": "2026-06-28T23:45:25+00:00",
-          "like_count": 17462,
-          "retweet_count": 1998,
-          "reply_count": 798,
+          "like_count": 17488,
+          "retweet_count": 2001,
+          "reply_count": 802,
           "url": "https://x.com/bcherny/status/2071379474277613732"
         },
         {
           "id": "2071647677591466098",
           "text": "In the next version of Claude Code: subagents run in the background by default, so you can keep talking to Claude while your subagents work\n\nIf you want your agent to run in the foreground, just tell Claude",
           "created_at": "2026-06-29T17:31:10+00:00",
-          "like_count": 6426,
-          "retweet_count": 244,
-          "reply_count": 406,
+          "like_count": 6522,
+          "retweet_count": 247,
+          "reply_count": 411,
           "url": "https://x.com/bcherny/status/2071647677591466098"
         },
         {
@@ -280,7 +280,7 @@
           "id": "2071650274549395875",
           "text": "@yheushen We've been rolling it out gradually over the last week to a small subset of users",
           "created_at": "2026-06-29T17:41:29+00:00",
-          "like_count": 77,
+          "like_count": 78,
           "retweet_count": 1,
           "reply_count": 11,
           "url": "https://x.com/bcherny/status/2071650274549395875"
@@ -367,8 +367,8 @@
           "id": "2071620375621009416",
           "text": "Voice agents, now on Vercel.\n\nRealtime, speech and transcription are now live on AI Gateway. Build with 𝚞𝚜𝚎𝚁𝚎𝚊𝚕𝚝𝚒𝚖𝚎, 𝚐𝚎𝚗𝚎𝚛𝚊𝚝𝚎𝚂𝚙𝚎𝚎𝚌𝚑 &amp; 𝚝𝚛𝚊𝚗𝚜𝚌𝚛𝚒𝚋𝚎 on AI SDK 7. https://t.co/kVVchomKPw",
           "created_at": "2026-06-29T15:42:41+00:00",
-          "like_count": 1289,
-          "retweet_count": 77,
+          "like_count": 1318,
+          "retweet_count": 79,
           "reply_count": 56,
           "url": "https://x.com/vercel/status/2071620375621009416"
         },
@@ -376,16 +376,16 @@
           "id": "2071612651684106518",
           "text": "So excited for the @vercel ships this week… some would say a decade in the making. any guesses? https://t.co/zL0V3vXV1N",
           "created_at": "2026-06-29T15:11:59+00:00",
-          "like_count": 844,
+          "like_count": 852,
           "retweet_count": 11,
-          "reply_count": 107,
+          "reply_count": 108,
           "url": "https://x.com/rauchg/status/2071612651684106518"
         },
         {
           "id": "2071621345151009184",
           "text": "Voice agents now on Vercel",
           "created_at": "2026-06-29T15:46:32+00:00",
-          "like_count": 661,
+          "like_count": 665,
           "retweet_count": 16,
           "reply_count": 53,
           "url": "https://x.com/rauchg/status/2071621345151009184"
@@ -394,18 +394,18 @@
           "id": "2071647669467201657",
           "text": "Turbopack: What's new in Next.js 16.3 Preview\n\n• Up to 90% less memory in dev\n• Up to 5.5x faster builds via Filesystem Cache\n• Faster HMR and dev startup\n• Experimental Rust React Compiler\n• 𝚒𝚖𝚙𝚘𝚛𝚝.𝚖𝚎𝚝𝚊.𝚐𝚕𝚘𝚋 support\n\nhttps://t.co/AE9PYSn6ZW",
           "created_at": "2026-06-29T17:31:08+00:00",
-          "like_count": 585,
-          "retweet_count": 45,
-          "reply_count": 16,
+          "like_count": 599,
+          "retweet_count": 46,
+          "reply_count": 17,
           "url": "https://x.com/nextjs/status/2071647669467201657"
         },
         {
           "id": "2071653061748035994",
           "text": "Massive performance and memory usage improvements in @nextjs. \n\nTurbopack’s bet on the filesystem cache pays off greatly in a world of agents hammering 𝚗𝚎𝚡𝚝 𝚋𝚞𝚒𝚕𝚍.",
           "created_at": "2026-06-29T17:52:34+00:00",
-          "like_count": 490,
-          "retweet_count": 12,
-          "reply_count": 31,
+          "like_count": 500,
+          "retweet_count": 13,
+          "reply_count": 32,
           "url": "https://x.com/rauchg/status/2071653061748035994"
         }
       ]
@@ -540,8 +540,8 @@
           "id": "2071484877120184353",
           "text": "Middle East wars are now scheduled from 9pm Friday to 10.30pm Sunday (GMT). That’s it. Fighting outside designed non-market hours isn’t allowed.",
           "created_at": "2026-06-29T06:44:15+00:00",
-          "like_count": 4496,
-          "retweet_count": 772,
+          "like_count": 4502,
+          "retweet_count": 778,
           "reply_count": 102,
           "url": "https://x.com/JavierBlas/status/2071484877120184353"
         },
@@ -585,5 +585,5 @@
     }
   ],
   "errors": null,
-  "generated_at": "2026-06-30T01:09:54.778889+00:00"
+  "generated_at": "2026-06-30T01:38:10.738956+00:00"
 }
