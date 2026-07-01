@@ -2,7 +2,7 @@
 
 追踪 AI 一线的声音——做事的人、写代码的人、下注的人，不是二手转述。
 
-这是一份精心筛选的信息源清单。每天自动抓取这些人的播客和推文原文，你的 AI 帮你按自己的口味生成摘要。
+这是一份给 AI Agent 用户的精心筛选信息源。中央每天自动抓取播客、推文和论文；你的 Agent 读取 JSON，按你的口味生成日报。
 
 **这份清单本身就是产品。**
 
@@ -10,13 +10,15 @@
 
 ## 你会得到什么
 
-每天一份推送（Telegram / 飞书 / 邮件 / 直接在聊天里看），由你的 AI Agent 读取中央 JSON 后生成，包含：
+由你的 AI Agent 读取中央 JSON 后生成一份日报（可直接在聊天里看；如果你的 Agent 支持定时任务，也可以每天自动推送），包含：
 
 - 一线播客的最新内容（含全文字幕，不是摘要的摘要）
 - 精选推特账号的当日观点
 - arXiv 最新 AI/ML/NLP 论文标题、链接和摘要原文
 - 按你的偏好定制：中文 / 英文 / 双语，精华 / 标准 / 完整
-- 不需要任何 API key——所有内容由中央服务统一抓取
+- 不需要内容 API key——所有内容由中央服务统一抓取
+
+> AI Signal 是 **Agent-first** 架构：中央只供料，不替每个用户生成最终日报。真正的总结、翻译、格式定制，都由用户自己的 Agent 完成。
 
 ## 信息源
 
@@ -64,9 +66,9 @@
 
 > **帮我安装 https://github.com/Benboerba620/ai-signal**
 
-AI 会自动完成安装，然后引导你设置语言、详细程度和推送方式。设置完**立刻收到第一份推送**。
+AI 会自动完成安装，然后引导你设置语言、详细程度和输出方式。设置完**立刻生成第一份日报**。
 
-不需要敲命令、不需要配环境、不需要 API key。
+不需要敲命令、不需要内容 API key。你需要一个能运行这个 skill 的 AI Agent。
 
 <details>
 <summary>手动安装（如果你的 Agent 不支持自动安装）</summary>
@@ -123,7 +125,7 @@ cd ai-signal/scripts && pip install -r ../requirements.txt
   └── prepare_digest.py → 从本 repo 拉 feed
       → 输出一个 ASCII-safe JSON（默认不包含中央中文摘要）
       → 你的 AI 直接读取 JSON，按你的偏好生成摘要
-      → deliver.py → 推送到你的 Telegram / 飞书 / 邮件
+      → 直接显示，或由支持定时/推送的 Agent 发送到 Telegram / 飞书 / 邮件
 ```
 
 **你不需要任何内容 API key。** 内容抓取在中央完成，摘要由你自己的 AI Agent 读取 JSON 后生成。
@@ -135,7 +137,7 @@ cd ai-signal/scripts && pip install -r ../requirements.txt
 - 一个 AI Agent（OpenClaw、Claude Code、Cursor、WorkBuddy、Codex 等均可）
 - 网络连接（拉取中央 feed）
 
-就这些。不需要任何 API key。所有内容由中央统一抓取，每天自动更新。
+就这些。不需要内容 API key。所有内容由中央统一抓取，每天自动更新。若要无人值守地每天自动收到，需要使用支持定时任务的 Agent；普通非持久 Agent 更适合手动输入 `/ai-signal` 查看。
 
 ## 隐私
 

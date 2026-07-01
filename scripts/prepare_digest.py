@@ -33,6 +33,7 @@ PROMPT_FILES = [
     "summarize-tweets.md",
     "summarize-papers.md",
     "digest-intro.md",
+    "translate.md",
 ]
 
 USER_DIR = Path.home() / ".ai-signal"
