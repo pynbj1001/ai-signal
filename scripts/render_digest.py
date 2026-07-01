@@ -18,8 +18,11 @@ AI_KEYWORDS = (
     "claude", "openai", "anthropic", "gemini", "deepmind", "gpt",
     "inference", "token", "tokens", "eval", "benchmark", "reasoning",
     "robot", "robotics", "chip", "hardware", "accelerator", "tapeout",
-    "math", "research", "paper", "arxiv",
+    "math", "startup", "startups",
+    "invest", "investment", "investing", "market", "markets", "product",
+    "founder", "company", "enterprise", "software", "developer",
     "人工智能", "大模型", "模型", "智能体", "推理", "芯片", "机器人",
+    "投资", "市场", "产品", "创业", "公司", "软件", "开发者",
 )
 AI_WORD_KEYWORDS = ("ai", "agi", "llm", "llms", "gpt", "gpu", "tpu")
 
@@ -130,9 +133,54 @@ def selected_papers(data):
     ][:8]
 
 
+def podcast_lookup(data):
+    lookup = {}
+    for item in data.get("podcasts", []) or []:
+        keys = [
+            item.get("link", ""),
+            f"{item.get('channel', '')}\n{item.get('title', '')}",
+            item.get("title", ""),
+        ]
+        for key in keys:
+            if key:
+                lookup[key] = item
+    return lookup
+
+
+def is_relevant_podcast_item(item, raw_item=None):
+    raw_item = raw_item or {}
+    text = " ".join(
+        [
+            item.get("title", ""),
+            raw_item.get("title", ""),
+            raw_item.get("description", ""),
+            (raw_item.get("transcript") or "")[:2000],
+        ]
+    )
+    return is_ai_related_text(text)
+
+
+def selected_podcasts(data):
+    central = data.get("central_summaries") or {}
+    raw_lookup = podcast_lookup(data)
+    podcasts = central.get("podcasts") or []
+    if podcasts:
+        selected = []
+        for item in podcasts:
+            raw_item = (
+                raw_lookup.get(item.get("source_url", ""))
+                or raw_lookup.get(f"{item.get('channel', '')}\n{item.get('title', '')}")
+                or raw_lookup.get(item.get("title", ""))
+            )
+            if is_relevant_podcast_item(item, raw_item):
+                selected.append(item)
+        return selected
+    return [item for item in data.get("podcasts", []) if is_relevant_podcast_item(item, item)]
+
+
 def render_podcasts(data, lines):
     central = data.get("central_summaries") or {}
-    podcasts = central.get("podcasts") or []
+    podcasts = selected_podcasts(data) if (central.get("podcasts") or []) else []
     if podcasts:
         lines.append("## 播客精选")
         for item in podcasts:
@@ -147,7 +195,7 @@ def render_podcasts(data, lines):
             lines.append("")
         return
 
-    raw = data.get("podcasts") or []
+    raw = selected_podcasts(data)
     if raw:
         lines.append("## 播客更新")
         for item in raw[:5]:
@@ -256,6 +304,7 @@ def main():
     cfg = data.get("config") or {}
     stats = data.get("stats") or {}
     now = datetime.now().strftime("%Y-%m-%d")
+    display_podcasts = len(selected_podcasts(data))
     display_tweets = len(selected_tweets(data))
     display_papers = len(selected_papers(data))
 
@@ -265,7 +314,7 @@ def main():
         f"版本：{cfg.get('summary_profile', 'raw')} | 语言：{cfg.get('language', 'en')} | 详细度：{cfg.get('granularity', 'summary')}",
         "",
         (
-            f"今日内容：播客 {stats.get('podcast_episodes', 0)} 条，"
+            f"今日内容：播客 {display_podcasts} 条，"
             f"X / Twitter 动态 {display_tweets} 条，"
             f"论文 {display_papers} 篇。"
         ),

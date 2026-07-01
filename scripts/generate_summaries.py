@@ -38,8 +38,11 @@ AI_KEYWORDS = (
     "claude", "openai", "anthropic", "gemini", "deepmind", "gpt",
     "inference", "token", "tokens", "eval", "benchmark", "reasoning",
     "robot", "robotics", "chip", "hardware", "accelerator", "tapeout",
-    "math", "research", "paper", "arxiv",
+    "math", "startup", "startups",
+    "invest", "investment", "investing", "market", "markets", "product",
+    "founder", "company", "enterprise", "software", "developer",
     "人工智能", "大模型", "模型", "智能体", "推理", "芯片", "机器人",
+    "投资", "市场", "产品", "创业", "公司", "软件", "开发者",
 )
 AI_WORD_KEYWORDS = ("ai", "agi", "llm", "llms", "gpt", "gpu", "tpu")
 
@@ -55,6 +58,7 @@ NOISE_PATTERNS = (
 
 X_FORMAT_VERSION = "x-translation-v1"
 PAPER_FORMAT_VERSION = "paper-brief-v1"
+PODCAST_FILTER_VERSION = "podcast-topic-filter-v1"
 
 
 def configure_stdio() -> None:
@@ -380,6 +384,17 @@ def is_ai_related_text(text: str, extra: str = "") -> bool:
     return any(re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", combined) for keyword in AI_WORD_KEYWORDS)
 
 
+def is_relevant_podcast(item: dict[str, Any]) -> bool:
+    text = " ".join(
+        [
+            item.get("title", ""),
+            item.get("description", ""),
+            (item.get("transcript") or "")[:2000],
+        ]
+    )
+    return is_ai_related_text(text)
+
+
 def select_podcast_source(item: dict[str, Any], podcast_cfg: dict[str, Any]) -> tuple[str, str] | None:
     transcript = item.get("transcript") or ""
     if transcript:
@@ -512,6 +527,8 @@ def podcast_tasks(
     for item in feed.get("podcasts", []):
         if not item_matches_domains(item, profile):
             continue
+        if not is_relevant_podcast(item):
+            continue
 
         source = select_podcast_source(item, podcast_cfg)
         if source is None:
@@ -524,6 +541,7 @@ def podcast_tasks(
             json.dumps(
                 {
                     "model": cfg["llm"].get("model"),
+                    "filter_version": PODCAST_FILTER_VERSION,
                     "profile": profile,
                     "source_label": source_label,
                     "source_text": trimmed,
