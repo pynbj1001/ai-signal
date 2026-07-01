@@ -17,6 +17,24 @@
     "podcast_timeout_seconds": 180,
     "paper_timeout_seconds": 90
   },
+  "x_llm": {
+    "provider": "ark",
+    "api_key_env": "ARK_API_KEY",
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+    "model": "doubao-seed-2-1-pro-260628",
+    "temperature": 0.2,
+    "max_tokens": 2048,
+    "timeout_seconds": 90
+  },
+  "paper_llm": {
+    "provider": "ark",
+    "api_key_env": "ARK_API_KEY",
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+    "model": "doubao-seed-2-1-pro-260628",
+    "temperature": 0.2,
+    "max_tokens": 2048,
+    "timeout_seconds": 90
+  },
   "output": {
     "dir": "content/summaries",
     "index_path": "feeds/feed-summaries.json"

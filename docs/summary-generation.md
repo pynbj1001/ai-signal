@@ -43,18 +43,25 @@ python scripts/generate_summaries.py --dry-run --limit 1
 Generate one Chinese standard item per content type:
 
 ```bash
-set ARK_API_KEY=your_key_here
+set DEEPSEEK_API_KEY=your_deepseek_key_here
+set ARK_API_KEY=your_ark_key_here
 python scripts/generate_summaries.py --profile zh_standard --limit 1
 ```
 
 On PowerShell:
 
 ```powershell
-$env:ARK_API_KEY = "your_key_here"
+$env:DEEPSEEK_API_KEY = "your_deepseek_key_here"
+$env:ARK_API_KEY = "your_ark_key_here"
 python scripts/generate_summaries.py --profile zh_standard --limit 1
 ```
 
-For GitHub Actions, save the key as a repository secret named `ARK_API_KEY`.
+For GitHub Actions, save the keys as repository secrets named
+`DEEPSEEK_API_KEY` and `ARK_API_KEY`.
+
+The default setup uses DeepSeek for podcast summaries and Ark/Doubao for X and
+paper summaries. You can override each content type with `x_llm`, `paper_llm`,
+or `podcasts_llm` in `config/summary.json`.
 
 ## Notes
 

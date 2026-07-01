@@ -9,8 +9,9 @@ Usage:
     python scripts/generate_summaries.py --profile zh_standard --limit 1
 
 Env vars:
-    DEEPSEEK_API_KEY - DeepSeek API key. Required unless --dry-run is used
-    with the default config.
+    DEEPSEEK_API_KEY - DeepSeek API key for podcast summaries in the default config.
+    ARK_API_KEY - Ark/Doubao API key for X and paper summaries in the default config.
+    Required unless --dry-run is used.
 """
 
 from __future__ import annotations
@@ -344,6 +345,43 @@ def call_chat_completion(
     raise RuntimeError(f"LLM request failed: {last_error}")
 
 
+def llm_config_for_kind(cfg: dict[str, Any], kind: str) -> dict[str, Any]:
+    base = dict(cfg.get("llm") or {})
+    legacy_model_keys = {
+        "x": "x_model",
+        "podcasts": "podcast_model",
+        "papers": "paper_model",
+    }
+    legacy_model_key = legacy_model_keys.get(kind)
+    override = cfg.get(f"{kind}_llm") or {}
+    if not override and legacy_model_key and base.get(legacy_model_key):
+        base["model"] = base[legacy_model_key]
+    merged = base | override
+    if "model" not in merged:
+        raise RuntimeError(f"No model configured for {kind}")
+    return merged
+
+
+def llm_fingerprint(llm_cfg: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "provider": llm_cfg.get("provider", ""),
+        "base_url": llm_cfg.get("base_url", ""),
+        "api_key_env": llm_cfg.get("api_key_env", ""),
+        "model": llm_cfg.get("model", ""),
+    }
+
+
+def required_api_key_envs(tasks: list[dict[str, Any]], cfg: dict[str, Any], force: bool) -> set[str]:
+    envs: set[str] = set()
+    for task in tasks:
+        if is_task_cached(task, force):
+            continue
+        env_name = llm_config_for_kind(cfg, task["kind"]).get("api_key_env", "ARK_API_KEY")
+        if env_name:
+            envs.add(env_name)
+    return envs
+
+
 def previous_items(index: dict[str, Any], profile_name: str, kind: str) -> dict[str, dict[str, Any]]:
     profile = (index.get("profiles") or {}).get(profile_name) or {}
     return {item.get("id"): item for item in profile.get(kind, []) if item.get("id")}
@@ -488,7 +526,7 @@ def x_tasks(
             source_hash = sha256_text(
                 json.dumps(
                     {
-                        "model": cfg["llm"].get("model"),
+                        "llm": llm_fingerprint(llm_config_for_kind(cfg, "x")),
                         "format_version": X_FORMAT_VERSION,
                         "profile": profile,
                         "tweet": item,
@@ -545,7 +583,7 @@ def podcast_tasks(
         source_hash = sha256_text(
             json.dumps(
                 {
-                    "model": cfg["llm"].get("model"),
+                    "llm": llm_fingerprint(llm_config_for_kind(cfg, "podcasts")),
                     "filter_version": PODCAST_FILTER_VERSION,
                     "profile": profile,
                     "source_label": source_label,
@@ -607,7 +645,7 @@ def paper_tasks(
         source_hash = sha256_text(
             json.dumps(
                 {
-                    "model": cfg["llm"].get("model"),
+                    "llm": llm_fingerprint(llm_config_for_kind(cfg, "papers")),
                     "format_version": PAPER_FORMAT_VERSION,
                     "profile": profile,
                     "paper": item,
@@ -648,20 +686,23 @@ def summarize_task(task: dict[str, Any], cfg: dict[str, Any], profile_name: str,
     if task["kind"] == "x":
         prompt = build_x_prompt(item, profile)
         kind_label = "x"
-        timeout_seconds = cfg["llm"].get("x_timeout_seconds")
-        model = cfg["llm"].get("x_model") or cfg["llm"]["model"]
+        llm_cfg = llm_config_for_kind(cfg, "x")
+        timeout_seconds = llm_cfg.get("x_timeout_seconds") or llm_cfg.get("timeout_seconds")
+        model = llm_cfg["model"]
     elif task["kind"] == "podcasts":
         prompt = build_podcast_prompt(item, profile, task["source_text"], task["source_label"])
         kind_label = "podcast"
-        timeout_seconds = cfg["llm"].get("podcast_timeout_seconds")
-        model = cfg["llm"].get("podcast_model") or cfg["llm"]["model"]
+        llm_cfg = llm_config_for_kind(cfg, "podcasts")
+        timeout_seconds = llm_cfg.get("podcast_timeout_seconds") or llm_cfg.get("timeout_seconds")
+        model = llm_cfg.get("podcast_model") or llm_cfg["model"]
     else:
         prompt = build_paper_prompt(item, profile)
         kind_label = "paper"
-        timeout_seconds = cfg["llm"].get("paper_timeout_seconds")
-        model = cfg["llm"].get("paper_model") or cfg["llm"]["model"]
+        llm_cfg = llm_config_for_kind(cfg, "papers")
+        timeout_seconds = llm_cfg.get("paper_timeout_seconds") or llm_cfg.get("timeout_seconds")
+        model = llm_cfg["model"]
 
-    summary = call_chat_completion(prompt, cfg["llm"], timeout_seconds=timeout_seconds, model=model)
+    summary = call_chat_completion(prompt, llm_cfg, timeout_seconds=timeout_seconds, model=model)
     markdown = build_markdown(kind_label, item, profile_name, model, summary)
     write_text(output_path, markdown)
 
@@ -755,9 +796,10 @@ def main() -> None:
 
         print(f"\n[{profile_name}] {len(tasks)} item(s)")
         needs_llm = any(not is_task_cached(task, args.force) for task in tasks)
-        api_key_env = cfg.get("llm", {}).get("api_key_env", "ARK_API_KEY")
-        if needs_llm and not args.dry_run and not os.environ.get(api_key_env):
-            raise SystemExit(f"{api_key_env} is not set. Use --dry-run to inspect planned work without an API key.")
+        missing_key_envs = sorted(env for env in required_api_key_envs(tasks, cfg, args.force) if not os.environ.get(env))
+        if needs_llm and not args.dry_run and missing_key_envs:
+            missing = ", ".join(missing_key_envs)
+            raise SystemExit(f"{missing} is not set. Use --dry-run to inspect planned work without an API key.")
 
         profile_index = new_index["profiles"].setdefault(profile_name, {})
         profile_index.update({
