@@ -60,7 +60,7 @@ For GitHub Actions, save the keys as repository secrets named
 `DEEPSEEK_API_KEY` and `ARK_API_KEY`.
 
 The default setup uses DeepSeek for podcast summaries and Ark/Doubao for X and
-paper summaries. You can override each content type with `x_llm`, `paper_llm`,
+paper summaries. You can override each content type with `x_llm`, `papers_llm`,
 or `podcasts_llm` in `config/summary.json`.
 
 ## Notes

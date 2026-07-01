@@ -352,8 +352,17 @@ def llm_config_for_kind(cfg: dict[str, Any], kind: str) -> dict[str, Any]:
         "podcasts": "podcast_model",
         "papers": "paper_model",
     }
+    override_keys = {
+        "x": ("x_llm",),
+        "podcasts": ("podcasts_llm", "podcast_llm"),
+        "papers": ("papers_llm", "paper_llm"),
+    }
     legacy_model_key = legacy_model_keys.get(kind)
-    override = cfg.get(f"{kind}_llm") or {}
+    override = {}
+    for key in override_keys.get(kind, (f"{kind}_llm",)):
+        override = cfg.get(key) or {}
+        if override:
+            break
     if not override and legacy_model_key and base.get(legacy_model_key):
         base["model"] = base[legacy_model_key]
     merged = base | override

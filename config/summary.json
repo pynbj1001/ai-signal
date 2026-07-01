@@ -26,7 +26,7 @@
     "max_tokens": 2048,
     "timeout_seconds": 90
   },
-  "paper_llm": {
+  "papers_llm": {
     "provider": "ark",
     "api_key_env": "ARK_API_KEY",
     "base_url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
