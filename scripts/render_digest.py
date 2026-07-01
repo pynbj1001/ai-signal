@@ -13,6 +13,26 @@ import re
 import sys
 from datetime import datetime
 
+AI_KEYWORDS = (
+    "agent", "agents", "model", "models",
+    "claude", "openai", "anthropic", "gemini", "deepmind", "gpt",
+    "inference", "token", "tokens", "eval", "benchmark", "reasoning",
+    "robot", "robotics", "chip", "hardware", "accelerator", "tapeout",
+    "math", "research", "paper", "arxiv",
+    "人工智能", "大模型", "模型", "智能体", "推理", "芯片", "机器人",
+)
+AI_WORD_KEYWORDS = ("ai", "agi", "llm", "llms", "gpt", "gpu", "tpu")
+
+NOISE_PATTERNS = (
+    r"^agree$",
+    r"^haha",
+    r"^thank",
+    r"^thanks",
+    r"^ty$",
+    r"good morning",
+    r"please report back",
+)
+
 
 def clean_text(text):
     return "".join(ch for ch in text if not 0xD800 <= ord(ch) <= 0xDFFF)
@@ -40,6 +60,74 @@ def short_text(text, limit):
     if len(text) <= limit:
         return text
     return text[:limit].rstrip() + "..."
+
+
+def is_noise_tweet(text):
+    normalized = re.sub(r"\s+", " ", (text or "").lower()).strip()
+    if len(normalized) < 25 and not re.search(r"https?://|@\w+", normalized):
+        return True
+    return any(re.search(pattern, normalized) for pattern in NOISE_PATTERNS)
+
+
+def is_ai_related_text(text, extra=""):
+    combined = f"{text or ''} {extra or ''}".lower()
+    if any(keyword in combined for keyword in AI_KEYWORDS):
+        return True
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", combined) for keyword in AI_WORD_KEYWORDS)
+
+
+def zh_from_summary(text):
+    text = section_from_summary(text)
+    if not text:
+        return ""
+    text = re.sub(r"^#+\s*.*$", "", text, flags=re.M).strip()
+    text = re.sub(r"(?im)^[-*]?\s*(原文|链接|url|source|source link|original).*?$", "", text).strip()
+    paragraphs = [p.strip(" -*\n") for p in re.split(r"\n{2,}", text) if p.strip()]
+    if not paragraphs:
+        return short_text(text, 180)
+    return short_text(paragraphs[0], 220)
+
+
+def simple_paper_summary(text, abstract=""):
+    summary = section_from_summary(text)
+    if summary:
+        summary = re.sub(r"^#+\s*.*$", "", summary, flags=re.M)
+        summary = re.sub(r"(?im)^[-*]?\s*(来源|source|arxiv|pdf|链接).*?$", "", summary)
+        sentences = re.split(r"(?<=[。！？.!?])\s+", re.sub(r"\s+", " ", summary).strip())
+        for sentence in sentences:
+            sentence = sentence.strip(" -*")
+            if 25 <= len(sentence) <= 260:
+                return sentence
+        return short_text(summary, 220)
+    return short_text(abstract, 220)
+
+
+def selected_tweets(data):
+    accounts = data.get("x") or []
+    selected = []
+    for account in accounts:
+        for tweet in account.get("tweets", []):
+            original = tweet.get("text", "")
+            if is_noise_tweet(original):
+                continue
+            if not is_ai_related_text(original):
+                continue
+            selected.append((account, tweet))
+    return selected
+
+
+def selected_papers(data):
+    central = data.get("central_summaries") or {}
+    central_papers = central.get("papers") or []
+    if central_papers:
+        return [
+            item for item in central_papers
+            if is_ai_related_text(item.get("title", ""), item.get("summary_text", ""))
+        ][:8]
+    return [
+        paper for paper in data.get("papers", [])
+        if is_ai_related_text(paper.get("title", ""), paper.get("abstract", ""))
+    ][:8]
 
 
 def render_podcasts(data, lines):
@@ -78,60 +166,48 @@ def render_podcasts(data, lines):
 def render_tweets(data, lines):
     central = data.get("central_summaries") or {}
     x_by_id = {str(item.get("tweet_id") or item.get("id")): item for item in central.get("x", [])}
-    accounts = data.get("x") or []
-    total_tweets = sum(len(account.get("tweets", [])) for account in accounts)
-    if total_tweets:
-        lines.append("## X / Twitter 逐条摘要")
-        for account in accounts:
+    selected = selected_tweets(data)
+
+    if selected:
+        lines.append("## X / Twitter 动态")
+        for account, tweet in selected:
             name = account.get("name") or account.get("handle") or "Unknown"
             handle = account.get("handle", "")
-            for tweet in account.get("tweets", []):
-                tweet_id = str(tweet.get("id", ""))
-                item = x_by_id.get(tweet_id, {})
-                url = item.get("source_url") or tweet.get("url", "")
-                lines.append(f"### {name}" + (f" (@{handle})" if handle else ""))
-                summary = section_from_summary(item.get("summary_text", ""))
-                if summary:
-                    lines.append(summary)
-                elif item.get("status") == "error":
-                    lines.append(f"摘要生成失败：{item.get('error', 'unknown error')}")
-                else:
-                    lines.append("中央摘要暂不可用，先推送原文。")
-                original = item.get("original_text") or tweet.get("text", "")
-                lines.append("")
-                lines.append("原文：")
-                lines.append(f"> {original.replace(chr(10), chr(10) + '> ')}")
-                metrics = []
-                likes = item.get("like_count", tweet.get("like_count", 0))
-                reposts = item.get("retweet_count", tweet.get("retweet_count", 0))
-                if likes:
-                    metrics.append(f"{likes} likes")
-                if reposts:
-                    metrics.append(f"{reposts} reposts")
-                if metrics:
-                    lines.append(f"互动：{', '.join(metrics)}")
-                if url:
-                    lines.append(f"链接：{url}")
-                lines.append("")
+            tweet_id = str(tweet.get("id", ""))
+            item = x_by_id.get(tweet_id, {})
+            url = item.get("source_url") or tweet.get("url", "")
+            original = item.get("original_text") or tweet.get("text", "")
+            lines.append(f"### {name}" + (f" (@{handle})" if handle else ""))
+            translation = zh_from_summary(item.get("summary_text", ""))
+            if translation:
+                prefix = "中文：" if len(original) <= 280 else "简要说明："
+                lines.append(f"{prefix}{translation}")
+            else:
+                lines.append("中文：中央翻译暂不可用，先保留原文。")
+            lines.append("")
+            lines.append("原文：")
+            lines.append(f"> {original.replace(chr(10), chr(10) + '> ')}")
+            if url:
+                lines.append(f"链接：{url}")
+            lines.append("")
         return
 
+    accounts = data.get("x") or []
     active = [account for account in accounts if account.get("tweets")]
     if not active:
         return
-    lines.append("## X / Twitter")
+    lines.append("## X / Twitter 动态")
     for account in active[:8]:
         name = account.get("name") or account.get("handle")
         lines.append(f"### {name}")
         for tweet in account.get("tweets", [])[:2]:
+            if is_noise_tweet(tweet.get("text", "")):
+                continue
+            if not is_ai_related_text(tweet.get("text", "")):
+                continue
             text = short_text(tweet.get("text", ""), 260)
             url = tweet.get("url", "")
-            metrics = []
-            if tweet.get("like_count"):
-                metrics.append(f"{tweet.get('like_count')} likes")
-            if tweet.get("retweet_count"):
-                metrics.append(f"{tweet.get('retweet_count')} reposts")
-            suffix = f" ({', '.join(metrics)})" if metrics else ""
-            lines.append(f"- {text}{suffix}")
+            lines.append(f"- 原文：{text}")
             if url:
                 lines.append(f"  {url}")
         lines.append("")
@@ -139,32 +215,35 @@ def render_tweets(data, lines):
 
 def render_papers(data, lines):
     central = data.get("central_summaries") or {}
-    central_papers = central.get("papers") or []
-    if central_papers:
+    central_papers = selected_papers(data) if (central.get("papers") or []) else []
+    filtered_papers = central_papers
+    if filtered_papers:
         lines.append("## 论文精选")
-        for item in central_papers[:8]:
+        for item in filtered_papers[:8]:
             title = item.get("title", "Untitled")
             url = item.get("source_url", "")
             lines.append(f"### {title}")
             if url:
                 lines.append(f"arXiv：{url}")
-            summary = section_from_summary(item.get("summary_text", ""))
-            lines.append(summary or "中央论文摘要暂不可用。")
+            summary = simple_paper_summary(item.get("summary_text", ""))
+            lines.append(f"一句话：{summary or '中央论文摘要暂不可用。'}")
             lines.append("")
         return
 
     papers = data.get("papers") or []
     if papers:
         lines.append("## arXiv 新论文")
-        for paper in papers[:8]:
+        filtered = selected_papers(data)
+        for paper in filtered[:8]:
             title = paper.get("title", "Untitled")
-            abstract = short_text(paper.get("abstract", ""), 280)
+            abstract = short_text(paper.get("abstract", ""), 220)
             url = paper.get("abs_url", "")
-            lines.append(f"- {title}")
-            if abstract:
-                lines.append(f"  {abstract}")
+            lines.append(f"### {title}")
             if url:
-                lines.append(f"  {url}")
+                lines.append(f"arXiv：{url}")
+            if abstract:
+                lines.append(f"一句话：{abstract}")
+            lines.append("")
         lines.append("")
 
 
@@ -177,6 +256,8 @@ def main():
     cfg = data.get("config") or {}
     stats = data.get("stats") or {}
     now = datetime.now().strftime("%Y-%m-%d")
+    display_tweets = len(selected_tweets(data))
+    display_papers = len(selected_papers(data))
 
     lines = [
         f"# AI Signal 日报 - {now}",
@@ -185,10 +266,8 @@ def main():
         "",
         (
             f"今日内容：播客 {stats.get('podcast_episodes', 0)} 条，"
-            f"中央推文摘要 {stats.get('central_x_summaries', 0)} 条，"
-            f"中央播客摘要 {stats.get('central_podcast_summaries', 0)} 条，"
-            f"推文 {stats.get('total_tweets', 0)} 条，"
-            f"论文 {stats.get('arxiv_papers', 0)} 篇。"
+            f"X / Twitter 动态 {display_tweets} 条，"
+            f"论文 {display_papers} 篇。"
         ),
         "",
     ]

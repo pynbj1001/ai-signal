@@ -33,6 +33,29 @@ SCRIPT_DIR = Path(__file__).parent
 ROOT_DIR = SCRIPT_DIR.parent
 DEFAULT_CONFIG_PATH = ROOT_DIR / "config" / "summary.json"
 
+AI_KEYWORDS = (
+    "agent", "agents", "model", "models",
+    "claude", "openai", "anthropic", "gemini", "deepmind", "gpt",
+    "inference", "token", "tokens", "eval", "benchmark", "reasoning",
+    "robot", "robotics", "chip", "hardware", "accelerator", "tapeout",
+    "math", "research", "paper", "arxiv",
+    "人工智能", "大模型", "模型", "智能体", "推理", "芯片", "机器人",
+)
+AI_WORD_KEYWORDS = ("ai", "agi", "llm", "llms", "gpt", "gpu", "tpu")
+
+NOISE_PATTERNS = (
+    r"^agree$",
+    r"^haha",
+    r"^thank",
+    r"^thanks",
+    r"^ty$",
+    r"good morning",
+    r"please report back",
+)
+
+X_FORMAT_VERSION = "x-translation-v1"
+PAPER_FORMAT_VERSION = "paper-brief-v1"
+
 
 def configure_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
@@ -159,15 +182,16 @@ def target_chars_for(profile: dict[str, Any], kind: str) -> int:
 
 
 def build_x_prompt(item: dict[str, Any], profile: dict[str, Any]) -> str:
-    return f"""You are writing a cached single-tweet brief for AI Signal.
+    return f"""You are preparing a cached X/Twitter item for AI Signal.
 
 {language_instruction(profile.get("language", "zh"))}
-{detail_instruction(profile.get("detail", "standard"), target_chars_for(profile, "x"))}
+Keep it short, around {target_chars_for(profile, "x")} characters.
 
 Rules:
-- Summarize this one X/Twitter post only.
+- For short posts, translate the post into natural Simplified Chinese only.
+- For longer posts, give the Chinese translation plus at most one short "为什么重要" sentence.
+- Do not write a broad summary if a direct translation is enough.
 - Preserve the original meaning. Do not add facts from outside the post.
-- If the post is mainly an announcement, say what changed and why it matters.
 - Return Markdown only.
 - Include the original URL.
 - The tracked account may be sharing, quoting, or discussing another post.
@@ -227,25 +251,20 @@ def build_paper_prompt(item: dict[str, Any], profile: dict[str, Any]) -> str:
     authors = ", ".join(item.get("authors", []) or [])
     categories = ", ".join(item.get("categories", []) or [])
     abstract = item.get("abstract", "")
-    return f"""You are writing a cached research brief for AI Signal.
+    return f"""You are writing a short cached paper note for AI Signal.
 
 {language_instruction(profile.get("language", "zh"))}
-{detail_instruction(profile.get("detail", "standard"), target_chars_for(profile, "paper"))}
+Keep it very concise, around {target_chars_for(profile, "paper")} characters.
 
 Rules:
 - Use only the supplied paper metadata and abstract.
 - Do not claim results that are not in the abstract.
-- If benchmark numbers or limitations are not provided, say they are not provided.
 - Return Markdown only.
 - Always include the arXiv link.
 
 Recommended structure:
-1. Problem
-2. Method
-3. Claimed results
-4. Why it matters
-5. Limits / what to verify
-6. Source link
+1. One-sentence summary
+2. Source link
 
 Paper metadata:
 - arXiv ID: {item.get("arxiv_id", "")}
@@ -347,6 +366,20 @@ def item_matches_domains(item: dict[str, Any], profile: dict[str, Any]) -> bool:
     return item.get("domain", "ai") in domains
 
 
+def is_noise_tweet(text: str) -> bool:
+    normalized = re.sub(r"\s+", " ", (text or "").lower()).strip()
+    if len(normalized) < 25 and not re.search(r"https?://|@\w+", normalized):
+        return True
+    return any(re.search(pattern, normalized) for pattern in NOISE_PATTERNS)
+
+
+def is_ai_related_text(text: str, extra: str = "") -> bool:
+    combined = f"{text or ''} {extra or ''}".lower()
+    if any(keyword in combined for keyword in AI_KEYWORDS):
+        return True
+    return any(re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", combined) for keyword in AI_WORD_KEYWORDS)
+
+
 def select_podcast_source(item: dict[str, Any], podcast_cfg: dict[str, Any]) -> tuple[str, str] | None:
     transcript = item.get("transcript") or ""
     if transcript:
@@ -412,6 +445,11 @@ def x_tasks(
         for tweet in account.get("tweets", []):
             if len(tasks) >= item_limit:
                 return tasks
+            text = tweet.get("text", "")
+            if is_noise_tweet(text):
+                continue
+            if not is_ai_related_text(text):
+                continue
             tweet_id = str(tweet.get("id", "") or stable_id(account.get("handle", ""), tweet.get("text", "")))
             item = {
                 "tweet_id": tweet_id,
@@ -431,6 +469,7 @@ def x_tasks(
                 json.dumps(
                     {
                         "model": cfg["llm"].get("model"),
+                        "format_version": X_FORMAT_VERSION,
                         "profile": profile,
                         "tweet": item,
                     },
@@ -536,12 +575,17 @@ def paper_tasks(
     max_items = int(paper_cfg.get("max_items", 30))
     item_limit = min(max_items, limit) if limit else max_items
 
-    for item in feed.get("papers", [])[:item_limit]:
+    for item in feed.get("papers", []):
+        if len(tasks) >= item_limit:
+            break
+        if not is_ai_related_text(item.get("title", ""), item.get("abstract", "")):
+            continue
         item_id = item.get("arxiv_id") or stable_id(item.get("title", ""), item.get("abs_url", ""))
         source_hash = sha256_text(
             json.dumps(
                 {
                     "model": cfg["llm"].get("model"),
+                    "format_version": PAPER_FORMAT_VERSION,
                     "profile": profile,
                     "paper": item,
                 },
@@ -706,6 +750,14 @@ def main() -> None:
         profile_index.setdefault("papers", [])
         profile_updates = {"x": [], "podcasts": [], "papers": []}
 
+        def handle_result(result: dict[str, Any], kind: str) -> None:
+            if kind == "x":
+                profile_updates["x"].append(result)
+            elif kind == "podcasts":
+                profile_updates["podcasts"].append(result)
+            else:
+                profile_updates["papers"].append(result)
+
         pending_tasks: list[dict[str, Any]] = []
         for task in tasks:
             item = task["item"]
@@ -717,16 +769,9 @@ def main() -> None:
             if args.dry_run:
                 continue
             if is_cached:
+                handle_result(task["old_item"], task["kind"])
                 continue
             pending_tasks.append(task)
-
-        def handle_result(result: dict[str, Any], kind: str) -> None:
-            if kind == "x":
-                profile_updates["x"].append(result)
-            elif kind == "podcasts":
-                profile_updates["podcasts"].append(result)
-            else:
-                profile_updates["papers"].append(result)
 
         def run_task(task: dict[str, Any]) -> dict[str, Any]:
             item = task["item"]
@@ -767,9 +812,21 @@ def main() -> None:
                 handle_result(result, task["kind"])
                 index_changed = True
 
-        merge_profile_items(profile_index, "x", profile_updates["x"])
-        merge_profile_items(profile_index, "podcasts", profile_updates["podcasts"])
-        merge_profile_items(profile_index, "papers", profile_updates["papers"])
+        if args.type in ("all", "x"):
+            profile_index["x"] = profile_updates["x"]
+            index_changed = True
+        else:
+            merge_profile_items(profile_index, "x", profile_updates["x"])
+        if args.type in ("all", "podcasts"):
+            profile_index["podcasts"] = profile_updates["podcasts"]
+            index_changed = True
+        else:
+            merge_profile_items(profile_index, "podcasts", profile_updates["podcasts"])
+        if args.type in ("all", "papers"):
+            profile_index["papers"] = profile_updates["papers"]
+            index_changed = True
+        else:
+            merge_profile_items(profile_index, "papers", profile_updates["papers"])
 
     if args.dry_run:
         print("\nDry run complete. No files were written and no LLM was called.")

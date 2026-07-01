@@ -51,7 +51,7 @@ jobs:
           fi
           python scripts/generate_summaries.py --profile zh_standard --type x --max-workers 6
           python scripts/generate_summaries.py --profile zh_short --profile zh_standard --profile zh_deep --type podcasts --limit 5
-          python scripts/generate_summaries.py --profile zh_standard --type papers --limit 30
+          python scripts/generate_summaries.py --profile zh_standard --type papers --limit 12
 
       - name: Commit feeds
         run: |
