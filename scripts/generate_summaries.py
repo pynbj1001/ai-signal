@@ -839,7 +839,8 @@ def main() -> None:
             output_rel = rel_path(task["output_path"])
             is_cached = is_task_cached(task, args.force)
             action = "cached" if is_cached else "generate"
-            print(f"  - {action}: {task['kind']} | {title} -> {output_rel}")
+            task_llm = llm_config_for_kind(cfg, task["kind"])
+            print(f"  - {action}: {task['kind']} | {task_llm.get('model', '')} | {title} -> {output_rel}")
             if args.dry_run:
                 continue
             if is_cached:

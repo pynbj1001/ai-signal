@@ -32,8 +32,8 @@
     "base_url": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
     "model": "doubao-seed-2-1-pro-260628",
     "temperature": 0.2,
-    "max_tokens": 2048,
-    "timeout_seconds": 90
+    "max_tokens": 512,
+    "timeout_seconds": 45
   },
   "output": {
     "dir": "content/summaries",
