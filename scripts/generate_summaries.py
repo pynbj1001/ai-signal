@@ -111,7 +111,7 @@ NOISE_PATTERNS = (
     r"please report back",
 )
 
-X_FORMAT_VERSION = "x-translation-v2"
+X_FORMAT_VERSION = "x-translation-v3"
 PAPER_FORMAT_VERSION = "paper-brief-v1"
 PODCAST_FILTER_VERSION = "podcast-topic-filter-v1"
 
@@ -161,7 +161,7 @@ def decode_unicode_escape_output(text: str) -> str:
 
 def strip_wrapping_markdown_fence(text: str) -> str:
     stripped = text.strip()
-    match = re.fullmatch(r"```(?:markdown|md)?\s*\n(.*?)\n```", stripped, flags=re.DOTALL | re.IGNORECASE)
+    match = re.fullmatch(r"```[^\n]*\n(.*?)\n```", stripped, flags=re.DOTALL)
     if match:
         return match.group(1).strip()
     return text
@@ -172,6 +172,8 @@ def mojibake_score(text: str) -> int:
     score = sum(text.count(ch) for ch in suspicious_chars)
     score += len(re.findall(r"[锟斤拷]{2,}", text))
     score += len(re.findall(r"[��]{2,}", text))
+    score += len(re.findall(r"[åæçèé][\x80-\xbf\u0080-\u00bf]", text))
+    score += len(re.findall(r"(?:å|æ|ç|è|é|ä|ö|ü|¢|£|¤|¥|¦|§|¨|©)", text))
     return score
 
 
@@ -180,6 +182,8 @@ def validate_llm_output(text: str, llm_cfg: dict[str, Any], kind: str) -> str:
     if needs_unicode_escape_output(llm_cfg, kind):
         text = decode_unicode_escape_output(text)
     text = strip_wrapping_markdown_fence(text)
+    if text.lstrip().startswith("```"):
+        raise RuntimeError("LLM output contains an unstripped Markdown fence")
     if mojibake_score(text) >= 3:
         raise RuntimeError("LLM output appears to be mojibake/corrupted text")
     return text
