@@ -153,6 +153,14 @@ def decode_unicode_escape_output(text: str) -> str:
         return text
 
 
+def strip_wrapping_markdown_fence(text: str) -> str:
+    stripped = text.strip()
+    match = re.fullmatch(r"```(?:markdown|md)?\s*\n(.*?)\n```", stripped, flags=re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return text
+
+
 def mojibake_score(text: str) -> int:
     suspicious_chars = "�ÃÂÐÑÒÓÔÕÖØÙÚÛÜÝÞßðñòóôõöøùúûüýþÿ"
     score = sum(text.count(ch) for ch in suspicious_chars)
@@ -164,6 +172,7 @@ def mojibake_score(text: str) -> int:
 def validate_llm_output(text: str, llm_cfg: dict[str, Any], kind: str) -> str:
     if needs_unicode_escape_output(llm_cfg, kind):
         text = decode_unicode_escape_output(text)
+    text = strip_wrapping_markdown_fence(text)
     if mojibake_score(text) >= 3:
         raise RuntimeError("LLM output appears to be mojibake/corrupted text")
     return text
