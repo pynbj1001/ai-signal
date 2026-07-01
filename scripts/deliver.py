@@ -125,7 +125,7 @@ def main():
 
     config = {}
     if CONFIG_PATH.exists():
-        config = json.loads(CONFIG_PATH.read_text("utf-8"))
+        config = json.loads(CONFIG_PATH.read_text("utf-8-sig"))
 
     delivery = config.get("delivery", {"method": "stdout"})
     method = delivery.get("method", "stdout")
