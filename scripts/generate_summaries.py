@@ -18,6 +18,7 @@ Env vars:
 from __future__ import annotations
 
 import argparse
+import codecs
 import hashlib
 import json
 import os
@@ -133,6 +134,39 @@ def clean_data(value: Any) -> Any:
     if isinstance(value, dict):
         return {clean_data(str(k)): clean_data(v) for k, v in value.items()}
     return value
+
+
+def needs_unicode_escape_output(llm_cfg: dict[str, Any], kind: str) -> bool:
+    return (
+        kind == "x"
+        and llm_cfg.get("provider") == "deepseek"
+        and llm_cfg.get("model") == "deepseek-v4-pro"
+    )
+
+
+def decode_unicode_escape_output(text: str) -> str:
+    if "\\u" not in text and "\\U" not in text:
+        return text
+    try:
+        return codecs.decode(text, "unicode_escape")
+    except Exception:
+        return text
+
+
+def mojibake_score(text: str) -> int:
+    suspicious_chars = "�ÃÂÐÑÒÓÔÕÖØÙÚÛÜÝÞßðñòóôõöøùúûüýþÿ"
+    score = sum(text.count(ch) for ch in suspicious_chars)
+    score += len(re.findall(r"[锟斤拷]{2,}", text))
+    score += len(re.findall(r"[��]{2,}", text))
+    return score
+
+
+def validate_llm_output(text: str, llm_cfg: dict[str, Any], kind: str) -> str:
+    if needs_unicode_escape_output(llm_cfg, kind):
+        text = decode_unicode_escape_output(text)
+    if mojibake_score(text) >= 3:
+        raise RuntimeError("LLM output appears to be mojibake/corrupted text")
+    return text
 
 
 def rel_path(path: Path) -> str:
@@ -302,6 +336,49 @@ Original post:
 """
 
 
+def build_x_prompt(item: dict[str, Any], profile: dict[str, Any]) -> str:
+    return f"""You are preparing a cached X/Twitter item for AI Signal.
+
+{language_instruction(profile.get("language", "zh"))}
+Keep it short, around {target_chars_for(profile, "x")} characters.
+
+Rules:
+- For short posts, translate the post into natural Simplified Chinese only.
+- For longer posts, give the Chinese translation plus at most one short "why it matters" sentence.
+- Do not write a broad summary if a direct translation is enough.
+- Preserve the original meaning. Do not add facts from outside the post.
+- Return Markdown only.
+- Include the original URL.
+- The tracked account may be sharing, quoting, or discussing another post.
+  Do not say the tracked account "announced" or "launched" something unless
+  the original post itself makes that attribution clear.
+- Do not infer resharing/retweeting behavior from metadata. In the summary body,
+  translate or explain the content directly. Avoid meta phrases like
+  "This post says..." / "This item introduces...".
+
+Post metadata:
+- Tracked account: {item.get("name", "")} (@{item.get("handle", "")})
+- Domain: {item.get("domain", "")}
+- Created: {item.get("created_at", "")}
+- Likes: {item.get("like_count", 0)}
+- Reposts: {item.get("retweet_count", 0)}
+- Replies: {item.get("reply_count", 0)}
+- URL: {item.get("url", "")}
+
+Original post:
+{item.get("text", "")}
+"""
+
+
+def build_unicode_escape_instruction() -> str:
+    return (
+        "\nEncoding rule:\n"
+        "- Return all non-ASCII characters as JSON-style Unicode escape sequences, "
+        "for example \\u4f60\\u597d instead of Chinese characters.\n"
+        "- Keep ASCII Markdown syntax, URLs, and punctuation readable.\n"
+    )
+
+
 def build_podcast_prompt(item: dict[str, Any], profile: dict[str, Any], source_text: str, source_label: str) -> str:
     return f"""You are writing a cached research brief for AI Signal.
 
@@ -378,6 +455,7 @@ def call_chat_completion(
     llm_cfg: dict[str, Any],
     timeout_seconds: float | None = None,
     model: str | None = None,
+    kind: str = "",
 ) -> str:
     api_key_env = llm_cfg.get("api_key_env", "ARK_API_KEY")
     api_key = os.environ.get(api_key_env, "")
@@ -418,7 +496,7 @@ def call_chat_completion(
             content = data["choices"][0]["message"]["content"]
             if isinstance(content, list):
                 content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
-            return clean_text(str(content)).strip()
+            return validate_llm_output(clean_text(str(content)).strip(), llm_cfg, kind)
         except Exception as exc:  # noqa: BLE001 - keep retries simple for Actions.
             last_error = exc
             if attempt < 2:
@@ -835,6 +913,8 @@ def summarize_task(task: dict[str, Any], cfg: dict[str, Any], profile_name: str,
         prompt = build_x_prompt(item, profile)
         kind_label = "x"
         llm_cfg = llm_config_for_kind(cfg, "x")
+        if needs_unicode_escape_output(llm_cfg, "x"):
+            prompt += build_unicode_escape_instruction()
         timeout_seconds = llm_cfg.get("x_timeout_seconds") or llm_cfg.get("timeout_seconds")
         model = llm_cfg["model"]
     elif task["kind"] == "podcasts":
@@ -850,7 +930,7 @@ def summarize_task(task: dict[str, Any], cfg: dict[str, Any], profile_name: str,
         timeout_seconds = llm_cfg.get("paper_timeout_seconds") or llm_cfg.get("timeout_seconds")
         model = llm_cfg["model"]
 
-    summary = call_chat_completion(prompt, llm_cfg, timeout_seconds=timeout_seconds, model=model)
+    summary = call_chat_completion(prompt, llm_cfg, timeout_seconds=timeout_seconds, model=model, kind=task["kind"])
     markdown = build_markdown(kind_label, item, profile_name, model, summary)
     write_text(output_path, markdown)
 
