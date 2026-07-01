@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: '0 22 * * *'  # UTC 22:00 = Beijing 06:00
   workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: 'Ignore stored feed state for a one-off from-zero test'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 permissions:
   contents: write
@@ -22,6 +31,10 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Reset feed state for manual test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.force_refresh == 'true' }}
+        run: echo '{"seen_tweets":{},"seen_episodes":{},"seen_papers":{}}' > feeds/state-feed.json
 
       - name: Generate feeds
         env:
