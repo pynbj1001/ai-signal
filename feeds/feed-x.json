@@ -10,7 +10,7 @@
           "id": "2072061140943921550",
           "text": "Congrats!! I was impressed to learn about some of the engineering wizardry (e.g. *very* low voltage domains, cluster scale memory, ...) that goes into tokens/watt maxxing of state of the art LLMs at interactive tokens/sec/user. Esp fun and memorable is the idea that this is engineering at the \"opposite\" regime to that of power transmission lines: very low voltage high current (at tiny distances) vs. very high voltage & low current (at great distances). Looking forward to more!",
           "created_at": "2026-06-30T20:54:07+00:00",
-          "like_count": 1307,
+          "like_count": 1311,
           "retweet_count": 40,
           "reply_count": 20,
           "url": "https://x.com/karpathy/status/2072061140943921550"
@@ -115,7 +115,7 @@
           "id": "2072176948961526215",
           "text": "@deepfates Come up with candidates, then imagine you're the pokemon version of the thing being named and say the name over and over again if it was your only means of communicating with the world. Time to despair is probably correlated with name quality.",
           "created_at": "2026-07-01T04:34:18+00:00",
-          "like_count": 442,
+          "like_count": 443,
           "retweet_count": 21,
           "reply_count": 9,
           "url": "https://x.com/AmandaAskell/status/2072176948961526215"
@@ -132,17 +132,17 @@
           "id": "2071988881717871065",
           "text": "Claude Desktop is now available on Linux (Ubuntu and Debian) in beta.\n\nAlongside the browser and terminal, you now get a first-class desktop experience with Claude Code, Claude Cowork, and chat on all paid plans. https://t.co/m0K9t198t4",
           "created_at": "2026-06-30T16:06:59+00:00",
-          "like_count": 7277,
+          "like_count": 7282,
           "retweet_count": 657,
-          "reply_count": 357,
+          "reply_count": 358,
           "url": "https://x.com/ClaudeDevs/status/2071988881717871065"
         },
         {
           "id": "2072000214634742243",
           "text": "You asked, we listened. Claude Desktop on Linux is here!\n\nDownload link: https://t.co/gjgHZvbKyi",
           "created_at": "2026-06-30T16:52:01+00:00",
-          "like_count": 3712,
-          "retweet_count": 218,
+          "like_count": 3721,
+          "retweet_count": 219,
           "reply_count": 312,
           "url": "https://x.com/bcherny/status/2072000214634742243"
         },
@@ -150,7 +150,7 @@
           "id": "2072105851457019944",
           "text": "Agree",
           "created_at": "2026-06-30T23:51:47+00:00",
-          "like_count": 874,
+          "like_count": 875,
           "retweet_count": 9,
           "reply_count": 29,
           "url": "https://x.com/bcherny/status/2072105851457019944"
@@ -199,7 +199,7 @@
           "id": "2071951027302224262",
           "text": "You can now run any Dockerfile on Vercel.\n\n# 𝙳𝚘𝚌𝚔𝚎𝚛𝚏𝚒𝚕𝚎.𝚟𝚎𝚛𝚌𝚎𝚕\n𝙵𝚁𝙾𝙼 𝚐𝚘𝚕𝚊𝚗𝚐:𝟷.𝟸𝟺\n𝙲𝙾𝙿𝚈 . .\n𝚁𝚄𝙽 𝚐𝚘 𝚋𝚞𝚒𝚕𝚍 -𝚘 /𝚜𝚎𝚛𝚟𝚎𝚛 .\n𝙲𝙼𝙳 [\"/𝚜𝚎𝚛𝚟𝚎𝚛\"]\n\nhttps://t.co/xOUMi4zxpD",
           "created_at": "2026-06-30T13:36:34+00:00",
-          "like_count": 4503,
+          "like_count": 4506,
           "retweet_count": 589,
           "reply_count": 208,
           "url": "https://x.com/vercel/status/2071951027302224262"
@@ -252,7 +252,7 @@
           "id": "2071972062202343590",
           "text": "We're coming out of stealth.\n\nWe've built our first racks after a successful A0 tapeout, $1B+ in customer contracts, and $800m raised.\n\nEarly customer tests show us achieving SOTA throughput, latency, and power efficiency on inference workloads.\n\nOur first racks ship this summer. https://t.co/FLccrkLTza",
           "created_at": "2026-06-30T15:00:09+00:00",
-          "like_count": 8274,
+          "like_count": 8275,
           "retweet_count": 801,
           "reply_count": 544,
           "url": "https://x.com/Etched/status/2071972062202343590"
@@ -296,5 +296,5 @@
     }
   ],
   "errors": null,
-  "generated_at": "2026-07-01T11:37:03.938479+00:00"
+  "generated_at": "2026-07-01T11:40:38.674987+00:00"
 }
