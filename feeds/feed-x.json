@@ -12,17 +12,7 @@
       "name": "Swyx (Shawn Wang)",
       "domain": "ai",
       "tier": "analyst",
-      "tweets": [
-        {
-          "id": "2072136256818155922",
-          "text": "@hey_amandam @aiDotEngineer glad you are here!",
-          "created_at": "2026-07-01T01:52:36+00:00",
-          "like_count": 1,
-          "retweet_count": 0,
-          "reply_count": 0,
-          "url": "https://x.com/swyx/status/2072136256818155922"
-        }
-      ]
+      "tweets": []
     },
     {
       "handle": "dylanpatel_",
@@ -71,26 +61,7 @@
       "name": "Boris Cherny (Claude Code)",
       "domain": "ai",
       "tier": "builder",
-      "tweets": [
-        {
-          "id": "2072105851457019944",
-          "text": "Agree",
-          "created_at": "2026-06-30T23:51:47+00:00",
-          "like_count": 568,
-          "retweet_count": 7,
-          "reply_count": 22,
-          "url": "https://x.com/bcherny/status/2072105851457019944"
-        },
-        {
-          "id": "2072024792056909935",
-          "text": "actually insane stuff happening here https://t.co/mLxEHoGSPQ",
-          "created_at": "2026-06-30T18:29:41+00:00",
-          "like_count": 266,
-          "retweet_count": 13,
-          "reply_count": 5,
-          "url": "https://x.com/paularambles/status/2072024792056909935"
-        }
-      ]
+      "tweets": []
     },
     {
       "handle": "_catwu",
@@ -111,53 +82,7 @@
       "name": "Guillermo Rauch (Vercel)",
       "domain": "ai",
       "tier": "builder",
-      "tweets": [
-        {
-          "id": "2072123264843886709",
-          "text": "At dinner, tech executive is relaying his company’s @vercel feedback, and then his 12-year-old son’s @vercel feedback 😁 \n\nVercel is for everyone.",
-          "created_at": "2026-07-01T01:00:59+00:00",
-          "like_count": 360,
-          "retweet_count": 1,
-          "reply_count": 28,
-          "url": "https://x.com/rauchg/status/2072123264843886709"
-        },
-        {
-          "id": "2072131457296781448",
-          "text": "@dinwwwh We increased to 30 minutes for functions recently, but there’ll also be a Fluid variant that will be unlimited in duration soon (plus or minus a restart interval for operational health)",
-          "created_at": "2026-07-01T01:33:32+00:00",
-          "like_count": 20,
-          "retweet_count": 0,
-          "reply_count": 6,
-          "url": "https://x.com/rauchg/status/2072131457296781448"
-        },
-        {
-          "id": "2072121130249290159",
-          "text": "@ctatedev Such a cool CLI",
-          "created_at": "2026-07-01T00:52:30+00:00",
-          "like_count": 4,
-          "retweet_count": 1,
-          "reply_count": 0,
-          "url": "https://x.com/rauchg/status/2072121130249290159"
-        },
-        {
-          "id": "2072113664023277887",
-          "text": "@verduzcodotme @vercel 🫶",
-          "created_at": "2026-07-01T00:22:50+00:00",
-          "like_count": 4,
-          "retweet_count": 0,
-          "reply_count": 1,
-          "url": "https://x.com/rauchg/status/2072113664023277887"
-        },
-        {
-          "id": "2072113712228384772",
-          "text": "@radenpioneer Yes",
-          "created_at": "2026-07-01T00:23:01+00:00",
-          "like_count": 1,
-          "retweet_count": 0,
-          "reply_count": 0,
-          "url": "https://x.com/rauchg/status/2072113712228384772"
-        }
-      ]
+      "tweets": []
     },
     {
       "handle": "amasad",
@@ -171,19 +96,9 @@
       "name": "Josh Woodward (Google Labs)",
       "domain": "ai",
       "tier": "builder",
-      "tweets": [
-        {
-          "id": "2072141355816472918",
-          "text": "@Jason @sundarpichai Don’t worry. Full speed ahead on it!",
-          "created_at": "2026-07-01T02:12:52+00:00",
-          "like_count": 28,
-          "retweet_count": 0,
-          "reply_count": 3,
-          "url": "https://x.com/joshwoodward/status/2072141355816472918"
-        }
-      ]
+      "tweets": []
     }
   ],
   "errors": null,
-  "generated_at": "2026-07-01T03:15:28.172470+00:00"
+  "generated_at": "2026-07-01T03:18:34.078499+00:00"
 }

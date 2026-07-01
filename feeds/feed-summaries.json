@@ -1,0 +1,17 @@
+{
+  "profiles": {
+    "zh_standard": {
+      "language": "zh",
+      "detail": "standard",
+      "target_chars": 1600,
+      "x_target_chars": 220,
+      "podcast_target_chars": 2000,
+      "paper_target_chars": 600,
+      "x": [],
+      "podcasts": [],
+      "papers": []
+    }
+  },
+  "generated_at": "2026-07-01T03:19:16.358078+00:00",
+  "model": "deepseek-v4-pro"
+}
