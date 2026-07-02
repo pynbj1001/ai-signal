@@ -36,6 +36,7 @@ QUERY_URL = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/query"
 RESOURCE_ID = "volc.seedasr.auc"
 DONE = "20000000"
 RUNNING = {"20000001", "20000002"}
+SILENT = "20000003"
 
 
 def configure_stdio():
@@ -162,20 +163,31 @@ def should_transcribe(item, policy, keywords):
     return False, "channel not enabled"
 
 
-def headers(api_key, request_id):
-    return {
+def headers(api_key, request_id, sequence="-1"):
+    result = {
         "Content-Type": "application/json",
         "X-Api-Key": api_key,
         "X-Api-Resource-Id": RESOURCE_ID,
         "X-Api-Request-Id": request_id,
-        "X-Api-Sequence": "-1",
     }
+    # Only the submit call takes X-Api-Sequence; sending it on query breaks the API
+    if sequence is not None:
+        result["X-Api-Sequence"] = sequence
+    return result
 
 
 def status_code(resp):
     return (
         resp.headers.get("X-Api-Status-Code")
         or resp.headers.get("x-api-status-code")
+        or ""
+    )
+
+
+def status_message(resp):
+    return (
+        resp.headers.get("X-Api-Message")
+        or resp.headers.get("x-api-message")
         or ""
     )
 
@@ -232,8 +244,11 @@ def submit_task(client, api_key, item):
     resp = client.post(SUBMIT_URL, headers=headers(api_key, request_id), json=payload)
     resp.raise_for_status()
     code = status_code(resp)
-    if code and code != DONE:
-        raise RuntimeError(f"submit failed: status={code}, body={resp.text[:500]}")
+    if code != DONE:
+        raise RuntimeError(
+            f"submit failed: status={code or '(missing)'}, "
+            f"message={status_message(resp) or '(none)'}, body={resp.text[:300]}"
+        )
     return request_id
 
 
@@ -241,7 +256,7 @@ def query_task(client, api_key, request_id, poll_interval, max_wait):
     deadline = time.monotonic() + max_wait
     last_body = ""
     while time.monotonic() < deadline:
-        resp = client.post(QUERY_URL, headers=headers(api_key, request_id), json={})
+        resp = client.post(QUERY_URL, headers=headers(api_key, request_id, sequence=None), json={})
         resp.raise_for_status()
         code = status_code(resp)
         last_body = resp.text
@@ -254,10 +269,15 @@ def query_task(client, api_key, request_id, poll_interval, max_wait):
             if not text:
                 raise RuntimeError(f"query finished but transcript text was empty: {last_body[:500]}")
             return text
+        if code == SILENT:
+            raise RuntimeError("audio recognized as silent, no transcript")
         if code in RUNNING or not code:
             time.sleep(poll_interval)
             continue
-        raise RuntimeError(f"query failed: status={code}, body={last_body[:500]}")
+        raise RuntimeError(
+            f"query failed: status={code}, message={status_message(resp) or '(none)'}, "
+            f"body={last_body[:300]}"
+        )
     raise TimeoutError(f"transcription timed out after {max_wait}s; last body: {last_body[:500]}")
 
 
