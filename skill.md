@@ -379,6 +379,23 @@ For each episode, summarize according to granularity:
 - full: structured analysis with Key Data, Notable Quotes, implications
 Use `channel`, `title`, `link` from the JSON — NOT from transcript text.
 
+**Podcast follow-up expansion:**
+The digest is only the first filter. When the user asks to expand a podcast
+("展开第 2 个播客" / "把 Vercel agents 这期做 breakdown" / "深读这期播客"),
+use the existing `payload_file` and the episode's `transcript_file` when
+available. Do not fetch the web. Produce a deeper breakdown in the user's
+language with:
+- one-sentence thesis
+- core claims
+- argument chain
+- key evidence or quotes that are actually present in the transcript
+- practical implications for AI products, infrastructure, research, or investing
+- questions worth verifying
+
+At the end of every digest, before delivery attribution, add one short line
+telling the user they can pick any podcast, tweet, or paper to expand. For
+Chinese output, use wording like: "想深读的话，可以直接说：展开第 2 个播客。"
+
 **Papers (process third):**
 For each arXiv paper, summarize according to granularity:
 - highlights: one sentence on key contribution

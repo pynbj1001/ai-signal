@@ -34,4 +34,7 @@ Write a short 2-3 sentence opening that explains the strongest signal across tod
 - Prefer short paragraphs and clean section headings.
 - Do not wrap the final digest in a Markdown code fence.
 - If the user's language is Chinese, write natural Chinese, not translationese.
+- Before the final attribution line, add one concise follow-up hint that the user
+  can ask to expand any included podcast, tweet, or paper. For Chinese output,
+  use natural wording like: `想深读的话，可以直接说：展开第 2 个播客。`
 - End with: `Generated through AI Signal: https://github.com/Benboerba620/ai-signal`
