@@ -126,8 +126,14 @@ Ask: "你希望多久收到一次？"
 - 每天（推荐）
 - 每周
 
-Then ask: "几点推送？你在哪个时区？"
+Then ask: "几点推送？你在哪个时区？（默认早上 7:30）"
 (Example: "早上 8 点，北京时间" → deliveryTime: "08:00", timezone: "Asia/Shanghai")
+
+**Default: `deliveryTime: "07:30"` in the user's local timezone.** If the user
+says "默认" / "都行" / doesn't give a time, use 07:30. The central feed
+regenerates daily at 06:00 Beijing time (22:00 UTC), so an early-morning
+delivery picks up the freshest feed. If the user gives a timezone but no time,
+still default to 07:30 local.
 
 For weekly, also ask which day.
 
@@ -253,7 +259,7 @@ EOF
 
 **OpenClaw:**
 
-Build cron expression from user preferences (daily 8am → `"0 8 * * *"`).
+Build cron expression from user preferences (default daily 7:30am → `"30 7 * * *"`; e.g. daily 8am → `"0 8 * * *"`).
 
 Detect current channel and target ID, then:
 ```bash
