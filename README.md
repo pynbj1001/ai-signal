@@ -6,6 +6,8 @@
 
 **这份清单本身就是产品。**
 
+如果这个项目对你有帮助，欢迎在 GitHub 点一下 Star，让更多需要 AI 一线信号的人看到它。
+
 ## 最近更新
 
 - `2026-07-05`：feed 拉取加多源镜像——GitHub 不可达时自动切 jsDelivr CDN，大陆无代理用户也能每天收到更新
@@ -59,11 +61,11 @@
 | [Capital Allocators](https://capitalallocators.com/podcast/) | 机构投资者视角 |
 | [The Acquirers Podcast](https://acquirersmultiple.com/podcast/) | 价值投资方法论 |
 
-### Twitter/X（14 个账号）
+### Twitter/X（16 个账号）
 
 **分析师/研究者**：[@karpathy](https://x.com/karpathy)、[@swyx](https://x.com/swyx)、[@dylanpatel_](https://x.com/dylanpatel_)（SemiAnalysis）、[@leopoldaob](https://x.com/leopoldaob)、[@jimkeller_](https://x.com/jimkeller_)
 
-**决策者**：[@sama](https://x.com/sama)、[@DarioAmodei](https://x.com/DarioAmodei)
+**决策者**：[@sama](https://x.com/sama)、[@DarioAmodei](https://x.com/DarioAmodei)、[@demishassabis](https://x.com/demishassabis)（Google DeepMind）、[@jietang](https://x.com/jietang)（Z.ai / Tsinghua）
 
 **建造者**：[@AmandaAskell](https://x.com/AmandaAskell)、[@bcherny](https://x.com/bcherny)（Claude Code）、[@_catwu](https://x.com/_catwu)、[@alexalbert__](https://x.com/alexalbert__)、[@rauchg](https://x.com/rauchg)（Vercel）、[@amasad](https://x.com/amasad)（Replit）、[@joshwoodward](https://x.com/joshwoodward)（Google Labs）
 
@@ -144,26 +146,16 @@ git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
 
 ## 工作原理
 
+```mermaid
+flowchart LR
+  A["一线信息源<br/>X / 播客 / arXiv"] --> B["中央 GitHub Actions<br/>每天自动抓取"]
+  B --> C["公开 JSON feeds<br/>feed-x / feed-podcasts / feed-arxiv"]
+  C --> D["你的 AI Agent<br/>读取 JSON + 你的偏好"]
+  D --> E["生成个性化日报<br/>中文/英文、长/短、可继续追问"]
+  E --> F["聊天窗口 / Telegram / 飞书 / 邮件"]
 ```
-中央服务（本 repo，GitHub Actions 每天自动跑）
-  └── generate_feed.py
-      → 抓推文原文 + 播客 RSS + YouTube 全文字幕 + arXiv 论文
-      → X/Twitter 先做主题过滤，丢掉节日祝福、生活动态、纯社交表达等非 AI 信号
-      → feed-x.json、feed-podcasts.json、feed-arxiv.json（commit 到 repo）
-      → 同步生成 feed-summaries.json 中文摘要缓存（如果配置了 LLM keys）
-      → feed = 最近 24-72 小时的滚动窗口快照，无状态，多跑几次也不会丢内容
 
-你的机器（任意 AI Agent：OpenClaw / Claude Code / Cursor / WorkBuddy / Codex）
-  └── prepare_digest.py → 从本 repo 拉 feed（多源：GitHub raw → jsDelivr CDN，大陆无代理也可用）
-      → 读取 ~/.ai-signal/seen.json，过滤你已经看过的内容
-      → 如果中央摘要缓存比 raw feed 旧，自动忽略旧摘要
-      → manifest 标明每个 feed 来自 GitHub raw 还是本地缓存，并提示是否过期
-      → 完整内容写到 ~/.ai-signal/payload/（payload.json + 每集单独的 transcript 文件）
-      → stdout 只输出一个几 KB 的 manifest，任何 Agent 都能直接读
-      → 你的 AI 按需读取文件，按你的偏好生成摘要
-      → 直接显示，或由支持定时/推送的 Agent 发送到 Telegram / 飞书 / 邮件
-      → 确认展示/发送成功后，mark_delivered.py 才把本次内容写入 seen.json
-```
+简单说：中央只负责每天把 AI 一线原料抓好，用户自己的 Agent 负责筛选、翻译、总结和推送。这样不需要每个用户准备内容 API key，也不会把你的阅读偏好上传到中央服务。
 
 **你不需要任何内容 API key。** 内容抓取在中央完成，摘要由你自己的 AI Agent 读取 JSON 后生成。
 
