@@ -45,13 +45,6 @@ cd <install_path>/scripts && pip install -r ../requirements.txt
 
 3. If clone or install fails, diagnose and retry (missing git? missing pip?
    network issue?). Fix it yourself — do not ask the user to run commands.
-   Do not assume the user's local proxy port. A proxy such as
-   `127.0.0.1:12345` may exist on the maintainer's machine but be wrong for the
-   user's machine. If `git config --get http.proxy` or
-   `git config --get https.proxy` points to a localhost proxy that is not
-   reachable, do not edit or unset the user's global Git config. Retry only this
-   clone with Git proxy config cleared for the command, for example:
-   `git -c http.proxy= -c https.proxy= clone https://github.com/Benboerba620/ai-signal.git <install_path>`.
    If github.com is unreachable (common in mainland China without a proxy),
    retry the clone through a mirror prefix, e.g.
    `git clone https://gh-proxy.com/https://github.com/Benboerba620/ai-signal.git <install_path>`
@@ -67,7 +60,9 @@ The user's only action is telling you to install. Everything else is your job.
 
 ## Detecting Platform
 
-Before doing anything, detect which platform you're running on:
+Before doing anything, detect which platform you're running on. The question
+that matters is: **can you, the Agent, schedule a task that re-invokes yourself
+daily?**
 
 ```bash
 which openclaw 2>/dev/null && echo "PLATFORM=openclaw" || echo "PLATFORM=other"
@@ -76,19 +71,38 @@ which openclaw 2>/dev/null && echo "PLATFORM=openclaw" || echo "PLATFORM=other"
 - **OpenClaw** (`PLATFORM=openclaw`): Persistent agent with built-in messaging channels.
   Delivery is automatic via OpenClaw's channel system. Cron uses `openclaw cron add`.
 
-- **Other** (Claude Code, Cursor, WorkBuddy, Codex, etc.): Non-persistent agent.
-  These can generate digests on demand. Do not set a plain system cron that pipes
-  JSON directly to delivery; that skips the Agent remix and sends raw JSON.
-  For automatic delivery, use a persistent Agent scheduler such as OpenClaw.
+- **Other persistent agent** (e.g. Tencent WorkBuddy or any platform with a
+  scheduled-task / 定时任务 feature that re-runs the Agent — not just a bare
+  shell command): treat yourself as persistent. In Step 8, use your platform's
+  scheduler and make the scheduled instruction "run the ai-signal skill digest
+  workflow", so the Agent remix step is included in every scheduled run.
 
-Save the detected platform in config.json as `"platform": "openclaw"` or `"platform": "other"`.
+- **Non-persistent** (Claude Code, Cursor, Codex, etc.): can generate digests
+  on demand only. Do not set a plain system cron that pipes JSON directly to
+  delivery; that skips the Agent remix and sends raw JSON.
+
+Save it in config.json as `"platform": "openclaw"`, `"platform": "persistent"`,
+or `"platform": "other"`.
+
+**Windows note:** the bash snippets in this file are examples, not literal
+requirements. On Windows, translate them to PowerShell (write files with your
+file-writing tool instead of heredocs; use `$env:TEMP` instead of `/tmp`; the
+command is `python`, not `python3`). The Python scripts themselves are
+cross-platform.
 
 ---
 
 ## First Run — Onboarding
 
 Check if `~/.ai-signal/config.json` exists and has `onboardingComplete: true`.
-If NOT, run the onboarding flow:
+If NOT, run the onboarding flow.
+
+**Hard rule: ask Steps 2–6 as separate questions, in order. Do not skip or
+merge any of them.** In particular, always ask Step 2 (frequency + delivery
+time + timezone) even if you cannot schedule tasks yourself — save the answers
+to config.json anyway; they take effect as soon as the user runs this skill on
+a platform with a scheduler. Skipping the delivery-time question is the most
+common onboarding mistake.
 
 ### Step 1: Introduction
 
@@ -146,6 +160,11 @@ Ask: "你关注哪些领域？"
 
 **If OpenClaw:** SKIP this step. OpenClaw delivers via its built-in channels.
 Set `delivery.method` to `"stdout"` and move on.
+
+**If another persistent agent (WorkBuddy etc.) with its own chat channel:**
+same as OpenClaw — set `delivery.method` to `"stdout"` and let the scheduled
+Agent run deliver the digest in its own channel. Only configure Telegram/Feishu/
+email if the user explicitly wants delivery outside the platform.
 
 **If non-persistent agent (Claude Code, Cursor, etc.):**
 
@@ -257,6 +276,14 @@ openclaw cron run <jobId>
 ```
 
 Wait for test run to complete before proceeding.
+
+**Other persistent agent (WorkBuddy etc.):**
+
+Create a scheduled task with your platform's own scheduler at the user's
+`deliveryTime` / `timezone`. The scheduled instruction must re-invoke the Agent
+with: "Run the ai-signal skill: execute prepare_digest.py, remix the content
+into a digest following the prompts, then deliver it." Run it once as a test
+before confirming to the user.
 
 **Non-persistent agent:**
 
@@ -535,19 +562,6 @@ Central feed is updated daily at 6am Beijing time (UTC 22:00) with:
 Dwarkesh Patel, Lex Fridman, Latent Space, All-In Podcast, a16z, No Priors,
 SemiAnalysis (Dylan Patel), Google DeepMind, Lightcone (YC), Lenny's Podcast,
 Invest Like the Best, Capital Allocators, The Acquirers Podcast
-
-### People tracking (27 people, YouTube-wide guest search)
-Beyond the fixed channels, the central feed searches YouTube daily for these
-people appearing as podcast/interview **guests** anywhere. Hits merge into the
-same podcast feed with a `person` field (and `region: "cn"` for China AI voices).
-
-**Overseas:** Sundar Pichai, Greg Brockman, Sam Altman, Demis Hassabis, Jensen Huang,
-Satya Nadella, Mark Zuckerberg; Anthropic (Dario/Daniela Amodei, Krishna Rao,
-Mike Krieger, Sholto Douglas, Amanda Askell, Boris Cherny, Cat Wu, Alex Albert);
-Kevin Weil (OpenAI), Ivan Zhao (Notion), Dylan Patel (SemiAnalysis), Gavin Baker (Atreides)
-
-**China AI:** 闫俊杰 (MiniMax), 杨植麟 (Moonshot), 梁文锋 (DeepSeek), 唐杰 (智谱),
-罗福莉, 李广密 (拾象), 肖弘 (Manus)
 
 ### Twitter/X (14 accounts)
 **Analysts:** Karpathy, Swyx, Dylan Patel (SemiAnalysis), Leopold Aschenbrenner, Jim Keller

@@ -8,10 +8,7 @@ inside each source's lookback window, so extra manual runs never eat content.
 Per-user "already seen" dedup happens client-side in prepare_digest.py.
 
 Usage:
-    python scripts/generate_feed.py [--twitter-only | --podcasts-only | --arxiv-only | --people-only]
-
---people-only refreshes just the person-appearance searches (config
-podcasts.people) and keeps existing channel episodes in feed-podcasts.json.
+    python scripts/generate_feed.py [--twitter-only | --podcasts-only | --arxiv-only]
 
 Env vars:
     TWITTER_COOKIES — browser cookie string for twscrape auth
@@ -839,208 +836,7 @@ def fetch_channel(channel, lookback_hours, transcript_cache):
     return results, None
 
 
-# ── Person-appearance search (YouTube via yt-dlp) ────────────────────────────
-# Tracks specific people (lab execs, analysts, founders) as podcast/interview
-# GUESTS across all of YouTube, complementing the fixed channel RSS list.
-# Filters keep the feed consistent with channel content: the person's name must
-# appear in the video title (cleanest false-positive guard — YouTube search
-# happily returns videos matching only the company keywords), short clips are
-# dropped by minimum duration, and routine market-news briefings are skipped.
-
-DAILY_BRIEFING_RE = re.compile(
-    r"\bmorning markets?\b|\bmarket (?:wrap|close|open)\b|\b(?:opening|closing) bell\b"
-    r"|\bdaily (?:briefing|update|wrap|recap|rundown)\b|\b(?:before|after) the bell\b"
-    r"|\bpre[- ]?market\b|\bafter[- ]?hours? (?:wrap|recap)\b"
-    r"|\bbloomberg (?:daybreak|surveillance)\b",
-    re.IGNORECASE,
-)
-
-# YouTube matches common Chinese names loosely and returns dramas/anime
-# compilations; these tokens never appear in a real interview title.
-CN_TITLE_SKIP_RE = re.compile(
-    r"(MULTI\s?SUB|MULTISUB|多语字幕|"
-    r"动漫|番剧|玄幻|热血|逆袭|神豪|舔狗|"
-    r"最新合集|大合集|EP\d+\s*[-~～至]\s*\d+|第\s*\d+\s*[-~～至]\s*\d+\s*集|"
-    r"短剧|爽剧|霸总|穿越)",
-    re.IGNORECASE,
-)
-
-
-def run_ytdlp_search(query, max_n, timeout=300):
-    import subprocess
-    cmd = [sys.executable, "-m", "yt_dlp", "--no-warnings", "--dump-json",
-           "--skip-download", "--playlist-end", str(max_n)]
-    proxy = detect_proxy()
-    if proxy:
-        cmd += ["--proxy", proxy.replace("socks5h://", "socks5://")]
-    cmd.append(f"ytsearch{max_n}:{query}")
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", timeout=timeout)
-    videos = []
-    for line in proc.stdout.splitlines():
-        line = line.strip()
-        if not line.startswith("{"):
-            continue
-        try:
-            data = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        videos.append({
-            "id": data.get("id") or "",
-            "title": data.get("title") or "",
-            "channel": data.get("channel") or data.get("uploader") or "YouTube",
-            "upload_date": data.get("upload_date") or "",  # YYYYMMDD
-            "duration": data.get("duration") or 0,          # seconds
-            "description": data.get("description") or "",
-        })
-    if not videos and proc.returncode != 0:
-        detail = (proc.stderr or "").strip().splitlines()
-        raise RuntimeError(detail[-1] if detail else f"yt-dlp exit {proc.returncode}")
-    return videos
-
-
-def format_hms(seconds):
-    seconds = int(seconds or 0)
-    if seconds >= 3600:
-        return f"{seconds // 3600}:{seconds % 3600 // 60:02d}:{seconds % 60:02d}"
-    return f"{seconds // 60}:{seconds % 60:02d}"
-
-
-def search_person_appearances(search, people_cfg, since):
-    person = search["person"]
-    query = f"{search['query']} {datetime.now(timezone.utc).year}"
-    max_n = int(people_cfg.get("max_results_per_search", 3))
-    min_seconds = int(people_cfg.get("min_duration_minutes", 20)) * 60
-    log(f"🔍 {person}: {query}")
-
-    kept = []
-    for v in run_ytdlp_search(query, max_n):
-        title = v["title"]
-        if not v["id"]:
-            continue
-        if person.lower() not in title.lower():
-            log(f"  ⏭️ name not in title: {title[:60]}")
-            continue
-        if DAILY_BRIEFING_RE.search(title) or (
-                search.get("region") == "cn" and CN_TITLE_SKIP_RE.search(title)):
-            log(f"  ⏭️ title blacklist: {title[:60]}")
-            continue
-        if v["duration"] and v["duration"] < min_seconds:
-            log(f"  ⏭️ too short ({v['duration']}s, likely a clip): {title[:60]}")
-            continue
-        pub_date = None
-        if v["upload_date"]:
-            try:
-                pub_date = datetime.strptime(v["upload_date"], "%Y%m%d").replace(tzinfo=timezone.utc)
-            except ValueError:
-                pass
-        # Keep entries with an unparseable date: search is year-anchored, and
-        # dropping them here would lose fresh videos YouTube hasn't dated yet.
-        if pub_date and pub_date < since:
-            continue
-        kept.append((v, pub_date))
-    return kept
-
-
-def _person_video_ids(entries):
-    ids = set()
-    for entry in entries:
-        vid = entry.get("transcript_video_id") or _youtube_video_id(entry.get("link"))
-        if vid:
-            ids.add(vid)
-    return ids
-
-
-def fetch_people(sources, existing_feed, known_video_ids):
-    people_cfg = sources.get("podcasts", {}).get("people", {})
-    searches = people_cfg.get("searches", [])
-    if not searches:
-        return [], []
-
-    now = datetime.now(timezone.utc)
-    since = now - timedelta(hours=people_cfg.get("lookback_hours", 168))
-
-    # Rolling-window guarantee: previous person hits stay in the feed while
-    # inside the window, even when today's YouTube search ranking no longer
-    # surfaces them. Entries without a transcript retry captions each run.
-    carried = []
-    for entry in (existing_feed or {}).get("podcasts", []):
-        if not entry.get("person"):
-            continue
-        stamp = entry.get("pub_date") or entry.get("first_seen") or ""
-        try:
-            stamp_dt = datetime.fromisoformat(stamp)
-        except ValueError:
-            continue
-        if stamp_dt.tzinfo is None:
-            stamp_dt = stamp_dt.replace(tzinfo=timezone.utc)
-        if stamp_dt < since:
-            continue
-        if not entry.get("transcript") and entry.get("transcript_video_id"):
-            retried = _yt_transcript_by_id(entry["transcript_video_id"])
-            if retried["text"]:
-                entry = dict(entry)
-                entry["transcript"] = clean_transcript_text(retried["text"])
-                entry["transcript_available"] = True
-                entry["transcript_source"] = retried["source"]
-                entry["transcript_error"] = None
-        carried.append(entry)
-
-    seen = set(known_video_ids) | _person_video_ids(carried)
-    errors = []
-    candidates = []
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        futures = {pool.submit(search_person_appearances, s, people_cfg, since): s
-                   for s in searches}
-        for fut in as_completed(futures):
-            search = futures[fut]
-            try:
-                for v, pub_date in fut.result():
-                    candidates.append((search, v, pub_date))
-            except Exception as e:
-                errors.append(f"person search {search['person']}: {e}")
-
-    episodes = []
-    for search, v, pub_date in candidates:
-        vid = v["id"]
-        if vid in seen:
-            continue
-        seen.add(vid)
-        log(f"  🆕 [{search['person']}] {v['title'][:60]}")
-        fetched = _yt_transcript_by_id(vid)
-        transcript = clean_transcript_text(fetched["text"]) if fetched["text"] else None
-        if transcript:
-            log(f"    ✅ transcript ({len(transcript)} chars)")
-        else:
-            log(f"    ⏭️ transcript unavailable: {fetched['error']}")
-        entry = {
-            "channel": v["channel"],
-            "domain": search.get("domain", "ai"),
-            "person": search["person"],
-            "search_query": search["query"],
-            "guid": f"yt:{vid}",
-            "title": v["title"],
-            "pub_date": pub_date.isoformat() if pub_date else "",
-            "first_seen": now.isoformat(),
-            "link": f"https://www.youtube.com/watch?v={vid}",
-            "audio_url": "",
-            "duration": format_hms(v["duration"]),
-            "description": v["description"][:2000],
-            "transcript": transcript,
-            "transcript_available": bool(transcript),
-            "transcript_source": fetched["source"] if transcript else None,
-            "transcript_url": None,
-            "transcript_video_id": vid,
-            "transcript_error": fetched["error"] if not transcript else None,
-        }
-        if search.get("region"):
-            entry["region"] = search["region"]
-        episodes.append(entry)
-
-    return carried + episodes, errors
-
-
-def fetch_podcasts(sources, people_only=False):
+def fetch_podcasts(sources):
     podcast_cfg = sources.get("podcasts", {})
     channels = podcast_cfg.get("channels", [])
     lookback = podcast_cfg.get("lookback_hours", 72)
@@ -1062,24 +858,16 @@ def fetch_podcasts(sources, people_only=False):
     all_episodes = []
     errors = []
 
-    if people_only:
-        all_episodes = [e for e in existing.get("podcasts", []) if not e.get("person")]
-    else:
-        with ThreadPoolExecutor(max_workers=4) as pool:
-            futures = {pool.submit(fetch_channel, ch, lookback, transcript_cache): ch for ch in channels}
-            for fut in as_completed(futures):
-                try:
-                    eps, err = fut.result()
-                    all_episodes.extend(eps)
-                    if err:
-                        errors.append(f"{futures[fut]['name']}: {err}")
-                except Exception as e:
-                    errors.append(f"{futures[fut]['name']}: {e}")
-
-    log("\n── People searches ──")
-    people_episodes, people_errors = fetch_people(sources, existing, _person_video_ids(all_episodes))
-    all_episodes.extend(people_episodes)
-    errors.extend(people_errors)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futures = {pool.submit(fetch_channel, ch, lookback, transcript_cache): ch for ch in channels}
+        for fut in as_completed(futures):
+            try:
+                eps, err = fut.result()
+                all_episodes.extend(eps)
+                if err:
+                    errors.append(f"{futures[fut]['name']}: {err}")
+            except Exception as e:
+                errors.append(f"{futures[fut]['name']}: {e}")
 
     all_episodes.sort(key=lambda x: x.get("pub_date", ""), reverse=True)
     return {"podcasts": all_episodes, "errors": errors if errors else None}
@@ -1194,15 +982,13 @@ async def main():
     parser.add_argument("--twitter-only", action="store_true")
     parser.add_argument("--podcasts-only", action="store_true")
     parser.add_argument("--arxiv-only", action="store_true")
-    parser.add_argument("--people-only", action="store_true",
-                        help="refresh person-appearance searches only; keep channel episodes as-is")
     args = parser.parse_args()
 
     sources = load_sources()
     now = datetime.now(timezone.utc)
     FEEDS_DIR.mkdir(parents=True, exist_ok=True)
 
-    run_all = not (args.twitter_only or args.podcasts_only or args.arxiv_only or args.people_only)
+    run_all = not (args.twitter_only or args.podcasts_only or args.arxiv_only)
 
     if run_all or args.twitter_only:
         log("\n━━━ Twitter/X ━━━")
@@ -1212,15 +998,13 @@ async def main():
         active = sum(1 for a in twitter_feed["x"] if a["tweets"])
         log(f"✅ feed-x.json ({active}/{len(twitter_feed['x'])} accounts with content)")
 
-    if run_all or args.podcasts_only or args.people_only:
+    if run_all or args.podcasts_only:
         log("\n━━━ Podcasts ━━━")
-        podcast_feed = fetch_podcasts(sources, people_only=args.people_only)
+        podcast_feed = fetch_podcasts(sources)
         podcast_feed["generated_at"] = now.isoformat()
         write_json(FEEDS_DIR / "feed-podcasts.json", podcast_feed)
         with_transcript = sum(1 for e in podcast_feed["podcasts"] if e.get("transcript"))
-        person_hits = sum(1 for e in podcast_feed["podcasts"] if e.get("person"))
-        log(f"✅ feed-podcasts.json ({len(podcast_feed['podcasts'])} episodes, "
-            f"{with_transcript} with transcript, {person_hits} person hits)")
+        log(f"✅ feed-podcasts.json ({len(podcast_feed['podcasts'])} episodes, {with_transcript} with transcript)")
 
     if run_all or args.arxiv_only:
         arxiv_feed = fetch_arxiv(sources)

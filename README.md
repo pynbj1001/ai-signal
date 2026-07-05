@@ -1,57 +1,13 @@
 # AI Signal
 
-和奔波儿r一起，追踪 AI 一线声音。
+追踪 AI 一线的声音——做事的人、写代码的人、下注的人，不是二手转述。
 
-每天从做事的人、写代码的人、下注的人那里，捕捉 AI 最前沿发出的真实信号，而不是二手转述。
-
-这是一份给 AI Agent 用户的精选信息源。中央每天自动抓取播客、推文和论文；你的 Agent 读取 JSON，按你的口味生成日报。
+这是一份给 AI Agent 用户的精心筛选信息源。中央每天自动抓取播客、推文和论文；你的 Agent 读取 JSON，按你的口味生成日报。
 
 **这份清单本身就是产品。**
 
-## 快速开始
-
-打开你的 AI Agent（OpenClaw / Claude Code / Cursor / WorkBuddy / Codex 等），说一句话：
-
-> **帮我安装 https://github.com/Benboerba620/ai-signal**
-
-AI 会自动完成安装，然后引导你设置推送频率和时间、语言、详细程度和输出方式。设置完**立刻生成第一份日报**。
-
-不需要敲命令、不需要内容 API key。你需要一个能运行这个 skill 的 AI Agent。
-
-<details>
-<summary>手动安装（如果你的 Agent 不支持自动安装）</summary>
-
-```bash
-# OpenClaw
-git clone https://github.com/Benboerba620/ai-signal.git ~/skills/ai-signal
-cd ~/skills/ai-signal/scripts && pip install -r ../requirements.txt
-
-# Claude Code
-git clone https://github.com/Benboerba620/ai-signal.git ~/.claude/skills/ai-signal
-cd ~/.claude/skills/ai-signal/scripts && pip install -r ../requirements.txt
-
-# 其他
-git clone https://github.com/Benboerba620/ai-signal.git
-cd ai-signal/scripts && pip install -r ../requirements.txt
-```
-
-**国内网络 clone 失败？** 用镜像加速前缀（示例，失效就换一个同类服务）：
-
-```bash
-git clone https://gh-proxy.com/https://github.com/Benboerba620/ai-signal.git
-# 或
-git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
-```
-
-安装后的每日 feed 更新不依赖代理：GitHub 直连失败时自动切换 jsDelivr CDN 镜像。
-
-安装完成后告诉你的 Agent：**"set up ai signal"**
-
-</details>
-
 ## 最近更新
 
-- `2026-07-05`：新增人物追踪——27 位 AI 高管/分析师/创始人上任何播客都会被抓到（不再限于订阅频道），含 7 位中国 AI 一线人物
 - `2026-07-05`：feed 拉取加多源镜像——GitHub 不可达时自动切 jsDelivr CDN，大陆无代理用户也能每天收到更新
 - `2026-07-05`：推文加主题过滤，节日祝福 / 生活动态等噪音不再进 feed
 - `2026-07-04`：安装瘦身——用户侧只需 `httpx[socks]`；修复 SOCKS 代理下拉取失败与 Python 3.9 装不上
@@ -103,16 +59,6 @@ git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
 | [Capital Allocators](https://capitalallocators.com/podcast/) | 机构投资者视角 |
 | [The Acquirers Podcast](https://acquirersmultiple.com/podcast/) | 价值投资方法论 |
 
-### 人物追踪（27 人，全网搜索）
-
-频道订阅之外，每天在 YouTube 全网搜索这些人作为**嘉宾**出现的访谈（RSS 只覆盖主持人自己的节目，这里补他们上别人节目的场合）：
-
-**海外**：Sundar Pichai、Greg Brockman、Sam Altman、Demis Hassabis、Jensen Huang、Satya Nadella、Mark Zuckerberg；Anthropic 全线（Dario / Daniela Amodei、Krishna Rao、Mike Krieger、Sholto Douglas、Amanda Askell、Boris Cherny、Cat Wu、Alex Albert）；Kevin Weil（OpenAI CPO）、Ivan Zhao（Notion）、Dylan Patel（SemiAnalysis）、Gavin Baker（Atreides）
-
-**中国 AI**：闫俊杰（MiniMax）、杨植麟（月之暗面）、梁文锋（DeepSeek）、唐杰（智谱）、罗福莉、李广密（拾象）、肖弘（Manus）
-
-> 过滤规则：标题必须含人名（去同名假阳性）、时长 ≥ 15 分钟（去切片/shorts）、剔除例行盘面播报和影视剧合集噪音；与频道订阅命中的同一期节目自动去重。名单在 `config/sources.json` 的 `podcasts.people`。
-
 ### Twitter/X（14 个账号）
 
 **分析师/研究者**：[@karpathy](https://x.com/karpathy)、[@swyx](https://x.com/swyx)、[@dylanpatel_](https://x.com/dylanpatel_)（SemiAnalysis）、[@leopoldaob](https://x.com/leopoldaob)、[@jimkeller_](https://x.com/jimkeller_)
@@ -132,6 +78,47 @@ git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
 | cs.LG | 机器学习 |
 
 > 每天抓取最近 24 小时新提交的论文标题 + 摘要，订阅者的 AI 按需生成解读。
+
+## 快速开始
+
+打开你的 AI Agent（OpenClaw / Claude Code / Cursor / WorkBuddy / Codex 等），说一句话：
+
+> **帮我安装 https://github.com/Benboerba620/ai-signal**
+
+AI 会自动完成安装，然后引导你设置推送频率和时间、语言、详细程度和输出方式。设置完**立刻生成第一份日报**。
+
+不需要敲命令、不需要内容 API key。你需要一个能运行这个 skill 的 AI Agent。
+
+<details>
+<summary>手动安装（如果你的 Agent 不支持自动安装）</summary>
+
+```bash
+# OpenClaw
+git clone https://github.com/Benboerba620/ai-signal.git ~/skills/ai-signal
+cd ~/skills/ai-signal/scripts && pip install -r ../requirements.txt
+
+# Claude Code
+git clone https://github.com/Benboerba620/ai-signal.git ~/.claude/skills/ai-signal
+cd ~/.claude/skills/ai-signal/scripts && pip install -r ../requirements.txt
+
+# 其他
+git clone https://github.com/Benboerba620/ai-signal.git
+cd ai-signal/scripts && pip install -r ../requirements.txt
+```
+
+**国内网络 clone 失败？** 用镜像加速前缀（示例，失效就换一个同类服务）：
+
+```bash
+git clone https://gh-proxy.com/https://github.com/Benboerba620/ai-signal.git
+# 或
+git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
+```
+
+安装后的每日 feed 更新不依赖代理：GitHub 直连失败时自动切换 jsDelivr CDN 镜像。
+
+安装完成后告诉你的 Agent：**"set up ai signal"**
+
+</details>
 
 ## 定制
 
@@ -161,7 +148,6 @@ git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
 中央服务（本 repo，GitHub Actions 每天自动跑）
   └── generate_feed.py
       → 抓推文原文 + 播客 RSS + YouTube 全文字幕 + arXiv 论文
-      → 人物追踪：27 位 AI 关键人物的嘉宾访谈全网搜索（yt-dlp），命中并入播客 feed
       → X/Twitter 先做主题过滤，丢掉节日祝福、生活动态、纯社交表达等非 AI 信号
       → feed-x.json、feed-podcasts.json、feed-arxiv.json（commit 到 repo）
       → 同步生成 feed-summaries.json 中文摘要缓存（如果配置了 LLM keys）
