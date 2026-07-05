@@ -6,6 +6,9 @@
 
 ### 新增
 
+- feed 拉取加多源镜像：GitHub raw 不可达时自动切换 jsDelivr CDN，全部失败才落本地缓存。大陆无代理用户从此每天能正常收到更新；也可用 `AI_SIGNAL_BASE_URLS` 环境变量自定义镜像列表。
+  之所以这样改：raw.githubusercontent.com 在大陆基本不可达，此前无代理用户装上后每天拉取都会失败、只能吃旧缓存。
+- README 与 skill.md 补国内安装路径：clone 失败时用 gh-proxy 类镜像加速前缀。
 - X/Twitter 抓取加入主题过滤：节日祝福、生活动态、纯社交回复等非 AI 信号不再进入 feed。
   之所以这样改：7 月 4 日美国国庆的刷屏推挤占了 feed 位额。
 - 过滤关键词用当日真实 feed 校准：覆盖主流模型名（Claude / Fable / GPT / Gemini 等）、AIE、CLI 等一线语汇，宁可多留不错杀，互动排序兜底。

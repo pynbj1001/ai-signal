@@ -30,13 +30,13 @@ SCRIPT_DIR = Path(__file__).parent
 ROOT_DIR = SCRIPT_DIR.parent
 
 RAW_BASE = "https://raw.githubusercontent.com/Benboerba620/ai-signal/main"
-FEED_BASE = f"{RAW_BASE}/feeds"
-FEED_X_URL = f"{FEED_BASE}/feed-x.json"
-FEED_PODCASTS_URL = f"{FEED_BASE}/feed-podcasts.json"
-FEED_ARXIV_URL = f"{FEED_BASE}/feed-arxiv.json"
-FEED_SUMMARIES_URL = f"{FEED_BASE}/feed-summaries.json"
-
-PROMPTS_BASE = "https://raw.githubusercontent.com/Benboerba620/ai-signal/main/prompts"
+# Tried in order. raw.githubusercontent.com is blocked in some regions
+# (notably mainland China); jsDelivr mirrors the same repo content.
+# Override with AI_SIGNAL_BASE_URLS="https://base1,https://base2" if needed.
+MIRROR_BASES = [
+    RAW_BASE,
+    "https://cdn.jsdelivr.net/gh/Benboerba620/ai-signal@main",
+]
 PROMPT_FILES = [
     "summarize-podcast.md",
     "summarize-tweets.md",
@@ -276,6 +276,34 @@ def fetch_text(url):
         return None
 
 
+def candidate_bases():
+    env = os.environ.get("AI_SIGNAL_BASE_URLS")
+    if env:
+        bases = [b.strip().rstrip("/") for b in env.split(",") if b.strip()]
+        if bases:
+            return bases
+    return MIRROR_BASES
+
+
+def fetch_json_any(path):
+    """Fetch a repo-relative JSON file, trying each mirror base in order."""
+    for base in candidate_bases():
+        url = f"{base}/{path}"
+        data = fetch_json(url)
+        if data is not None:
+            return data, url
+    return None, f"{candidate_bases()[0]}/{path}"
+
+
+def fetch_text_any(path):
+    """Fetch a repo-relative text file, trying each mirror base in order."""
+    for base in candidate_bases():
+        text = fetch_text(f"{base}/{path}")
+        if text is not None:
+            return text
+    return None
+
+
 def load_local_json(filename):
     path = ROOT_DIR / "feeds" / filename
     if not path.exists():
@@ -306,8 +334,8 @@ def feed_meta(filename, url, source, feed, reason=None):
     }
 
 
-def fetch_feed(url, filename, content_key=None):
-    remote = fetch_json(url)
+def fetch_feed(filename, content_key=None):
+    remote, url = fetch_json_any(f"feeds/{filename}")
     local = load_local_json(filename)
     if remote and (not content_key or remote.get(content_key)):
         return remote, feed_meta(filename, url, "remote", remote)
@@ -478,7 +506,7 @@ def attach_summary_text(items):
         summary_path = item.get("summary_path")
         enriched = dict(item)
         if summary_path:
-            text = fetch_text(f"{RAW_BASE}/{summary_path}") or load_local_text(summary_path)
+            text = fetch_text_any(summary_path) or load_local_text(summary_path)
             if text:
                 enriched["summary_text"] = text
         results.append(enriched)
@@ -508,15 +536,15 @@ def main():
             errors.append(f"Config read error: {e}")
 
     # 2. Fetch feeds
-    feed_x, x_source = fetch_feed(FEED_X_URL, "feed-x.json", "x")
-    feed_podcasts, podcast_source = fetch_feed(FEED_PODCASTS_URL, "feed-podcasts.json", "podcasts")
-    feed_arxiv, arxiv_source = fetch_feed(FEED_ARXIV_URL, "feed-arxiv.json", "papers")
+    feed_x, x_source = fetch_feed("feed-x.json", "x")
+    feed_podcasts, podcast_source = fetch_feed("feed-podcasts.json", "podcasts")
+    feed_arxiv, arxiv_source = fetch_feed("feed-arxiv.json", "papers")
     include_central_summaries = wants_central_summaries(config)
     if include_central_summaries:
-        feed_summaries, summaries_source = fetch_feed(FEED_SUMMARIES_URL, "feed-summaries.json", "profiles")
+        feed_summaries, summaries_source = fetch_feed("feed-summaries.json", "profiles")
     else:
         feed_summaries = None
-        summaries_source = feed_meta("feed-summaries.json", FEED_SUMMARIES_URL, "disabled", None)
+        summaries_source = feed_meta("feed-summaries.json", f"{RAW_BASE}/feeds/feed-summaries.json", "disabled", None)
     feed_sources, source_warnings = annotate_feed_sources(
         {
             "x": x_source,
@@ -559,7 +587,7 @@ def main():
         if user_path.exists():
             prompts[key] = clean_text(user_path.read_text("utf-8", errors="replace"))
             continue
-        remote = fetch_text(f"{PROMPTS_BASE}/{filename}")
+        remote = fetch_text_any(f"prompts/{filename}")
         if remote:
             prompts[key] = remote
             continue

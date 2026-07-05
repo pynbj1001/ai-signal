@@ -8,6 +8,7 @@
 
 ## 最近更新
 
+- `2026-07-05`：feed 拉取加多源镜像——GitHub 不可达时自动切 jsDelivr CDN，大陆无代理用户也能每天收到更新
 - `2026-07-05`：推文加主题过滤，节日祝福 / 生活动态等噪音不再进 feed
 - `2026-07-04`：安装瘦身——用户侧只需 `httpx[socks]`；修复 SOCKS 代理下拉取失败与 Python 3.9 装不上
 - `2026-07-03`：已读标记改为送达确认后写入，生成失败不再丢内容
@@ -105,6 +106,16 @@ git clone https://github.com/Benboerba620/ai-signal.git
 cd ai-signal/scripts && pip install -r ../requirements.txt
 ```
 
+**国内网络 clone 失败？** 用镜像加速前缀（示例，失效就换一个同类服务）：
+
+```bash
+git clone https://gh-proxy.com/https://github.com/Benboerba620/ai-signal.git
+# 或
+git clone https://ghfast.top/https://github.com/Benboerba620/ai-signal.git
+```
+
+安装后的每日 feed 更新不依赖代理：GitHub 直连失败时自动切换 jsDelivr CDN 镜像。
+
 安装完成后告诉你的 Agent：**"set up ai signal"**
 
 </details>
@@ -143,7 +154,7 @@ cd ai-signal/scripts && pip install -r ../requirements.txt
       → feed = 最近 24-72 小时的滚动窗口快照，无状态，多跑几次也不会丢内容
 
 你的机器（任意 AI Agent：OpenClaw / Claude Code / Cursor / WorkBuddy / Codex）
-  └── prepare_digest.py → 从本 repo 拉 feed
+  └── prepare_digest.py → 从本 repo 拉 feed（多源：GitHub raw → jsDelivr CDN，大陆无代理也可用）
       → 读取 ~/.ai-signal/seen.json，过滤你已经看过的内容
       → 如果中央摘要缓存比 raw feed 旧，自动忽略旧摘要
       → manifest 标明每个 feed 来自 GitHub raw 还是本地缓存，并提示是否过期
@@ -161,7 +172,7 @@ cd ai-signal/scripts && pip install -r ../requirements.txt
 ## 要求
 
 - 一个 AI Agent（OpenClaw、Claude Code、Cursor、WorkBuddy、Codex 等均可）
-- 网络连接（拉取中央 feed）
+- 网络连接（拉取中央 feed；不需要 VPN——GitHub 不可达时自动走 jsDelivr CDN 镜像）
 
 就这些。不需要内容 API key。所有内容由中央统一抓取，每天自动更新。若要无人值守地每天自动收到，需要使用支持定时任务的 Agent；普通非持久 Agent 更适合手动输入 `/ai-signal` 查看。
 

@@ -45,6 +45,12 @@ cd <install_path>/scripts && pip install -r ../requirements.txt
 
 3. If clone or install fails, diagnose and retry (missing git? missing pip?
    network issue?). Fix it yourself — do not ask the user to run commands.
+   If github.com is unreachable (common in mainland China without a proxy),
+   retry the clone through a mirror prefix, e.g.
+   `git clone https://gh-proxy.com/https://github.com/Benboerba620/ai-signal.git <install_path>`
+   (or another gh-proxy-style service if that one is down). Daily feed
+   fetching does NOT need a proxy afterwards — prepare_digest.py falls back
+   to the jsDelivr CDN mirror automatically.
 
 4. Proceed directly to the Onboarding flow below.
 
