@@ -1000,12 +1000,27 @@ def fetch_people(sources, existing_feed, known_video_ids):
             except Exception as e:
                 errors.append(f"person search {search['person']}: {e}")
 
-    episodes = []
+    # Dedupe, newest first, then cap new entries per run. The cap bounds the
+    # digest burst on the first run (7-day lookback can surface a dozen hits at
+    # once) and on any unusually busy day; overflow is logged, and whatever is
+    # still fresh gets another chance when tomorrow's searches re-surface it.
+    fresh = []
     for search, v, pub_date in candidates:
-        vid = v["id"]
-        if vid in seen:
+        if v["id"] in seen:
             continue
-        seen.add(vid)
+        seen.add(v["id"])
+        fresh.append((search, v, pub_date))
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    fresh.sort(key=lambda item: item[2] or epoch, reverse=True)
+    max_new = int(people_cfg.get("max_new_per_run", 5))
+    if len(fresh) > max_new:
+        for search, v, _ in fresh[max_new:]:
+            log(f"  ⏸️ over daily cap ({max_new}), deferred: [{search['person']}] {v['title'][:60]}")
+        fresh = fresh[:max_new]
+
+    episodes = []
+    for search, v, pub_date in fresh:
+        vid = v["id"]
         log(f"  🆕 [{search['person']}] {v['title'][:60]}")
         fetched = _yt_transcript_by_id(vid)
         transcript = clean_transcript_text(fetched["text"]) if fetched["text"] else None
