@@ -639,6 +639,45 @@ def _yt_transcript_by_id(vid):
         }
 
 
+# youtube_transcript_api raises this exact phrase when the video IS reachable
+# but has no English caption track — used as a fallback signal when list() below
+# raises instead of returning.
+NO_ENGLISH_TRACK_MARKER = "No transcripts were found for any of the requested language codes"
+
+
+def _no_english_track(error):
+    return bool(error) and NO_ENGLISH_TRACK_MARKER in error
+
+
+def _yt_english_track_status(vid):
+    """Does the video have an English caption track?
+
+    Returns 'has_en' / 'no_en' / 'unknown'. Enumerates the actual caption tracks
+    via list(), so the verdict doesn't depend on parsing a fetch error message.
+    A Korean variety show or a Hindi dub returns 'no_en' even when its title is
+    written in English (which the non-Latin script filter can't catch). Network
+    or IP-block failures return 'unknown' so the caller keeps the entry for a
+    later retry instead of dropping a real English interview.
+    """
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        proxy = detect_proxy()
+        kwargs = {}
+        if proxy:
+            from youtube_transcript_api.proxies import GenericProxyConfig
+            p = proxy.replace("socks5h://", "socks5://")
+            kwargs["proxy_config"] = GenericProxyConfig(http_url=p, https_url=p)
+        tlist = YouTubeTranscriptApi(**kwargs).list(vid)
+        for t in tlist:
+            if (t.language_code or "").lower().startswith("en"):
+                return "has_en"
+        return "no_en"
+    except Exception as e:
+        # A "no transcripts in the requested languages" style error still means
+        # the video was reachable and lacks English; anything else is transient.
+        return "no_en" if _no_english_track(str(e)) else "unknown"
+
+
 def get_youtube_transcript(link):
     vid = _youtube_video_id(link)
     if vid:
@@ -1103,7 +1142,15 @@ def fetch_people(sources, existing_feed, known_video_ids):
         if stamp_dt < since:
             continue
         if not entry.get("transcript") and entry.get("transcript_video_id"):
-            retried = _yt_transcript_by_id(entry["transcript_video_id"])
+            vid = entry["transcript_video_id"]
+            if entry.get("region") != "cn" and _yt_english_track_status(vid) == "no_en":
+                # Foreign original/dub that slipped in before the gate, or that a
+                # network fluke let through on an earlier run — drop it from the
+                # carry set so it stops recurring.
+                log(f"  ⏭️ carried foreign entry dropped (no English track): "
+                    f"{entry.get('title','')[:50]}")
+                continue
+            retried = _yt_transcript_by_id(vid)
             if retried["text"]:
                 entry = dict(entry)
                 entry["transcript"] = clean_transcript_text(retried["text"])
@@ -1149,12 +1196,21 @@ def fetch_people(sources, existing_feed, known_video_ids):
     for search, v, pub_date in fresh:
         vid = v["id"]
         log(f"  🆕 [{search['person']}] {v['title'][:60]}")
+        # English-original gate: for overseas people, reject a video whose only
+        # caption tracks are non-English (foreign original / dub) — even when the
+        # title is written in English, which the script filter can't catch. Only
+        # a definitive 'no_en' verdict skips; 'unknown' (network/IP block) falls
+        # through so a real English interview is never dropped on a fluke. cn
+        # voices are exempt (their real interviews are in Chinese).
+        if search.get("region") != "cn" and _yt_english_track_status(vid) == "no_en":
+            log(f"    ⏭️ no English track (foreign original/dub), skipped: {v['title'][:50]}")
+            continue
         fetched = _yt_transcript_by_id(vid)
         transcript = clean_transcript_text(fetched["text"]) if fetched["text"] else None
         if transcript:
             log(f"    ✅ transcript ({len(transcript)} chars)")
         else:
-            log(f"    ⏭️ transcript unavailable: {fetched['error']}")
+            log(f"    ⏭️ transcript unavailable (kept for retry): {(fetched['error'] or '')[:80]}")
         entry = {
             "channel": v["channel"],
             "domain": search.get("domain", "ai"),
