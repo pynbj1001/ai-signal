@@ -573,8 +573,11 @@ Invest Like the Best, Capital Allocators, The Acquirers Podcast
 Beyond the fixed channels, the central feed searches YouTube daily for these
 people appearing as podcast/interview **guests** anywhere, limited server-side
 to videos uploaded in the past week. Channels under 50k subscribers are
-rejected (small channels are mostly re-upload accounts). Hits merge into the
-same podcast feed with a `person` field (and `region: "cn"` for China AI voices).
+rejected (small re-upload accounts), and for overseas people, channels or
+titles in a non-Latin script are rejected too (large foreign-language
+dub/reaction channels carry no English transcript and aren't real interviews).
+Hits merge into the same podcast feed with a `person` field (and `region: "cn"`
+for China AI voices, which are exempt from the non-Latin filter).
 
 **Overseas:** Sundar Pichai, Greg Brockman, Sam Altman, Demis Hassabis, Jensen Huang,
 Satya Nadella, Mark Zuckerberg; Anthropic (Dario/Daniela Amodei, Krishna Rao,
