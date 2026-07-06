@@ -576,8 +576,12 @@ to videos uploaded in the past week. Channels under 50k subscribers are
 rejected (small re-upload accounts), and for overseas people, channels or
 titles in a non-Latin script are rejected too (large foreign-language
 dub/reaction channels carry no English transcript and aren't real interviews).
-Hits merge into the same podcast feed with a `person` field (and `region: "cn"`
-for China AI voices, which are exempt from the non-Latin filter).
+As a definitive backstop, an overseas-person video with no English caption
+track at all is rejected — this catches foreign shows that use an English title
+(e.g. Jensen Huang on the Korean variety show You Quiz on the Block, captions
+only in Korean). Only English originals get through. Hits merge into the same
+podcast feed with a `person` field (and `region: "cn"` for China AI voices,
+which are exempt from both filters).
 
 **Overseas:** Sundar Pichai, Greg Brockman, Sam Altman, Demis Hassabis, Jensen Huang,
 Satya Nadella, Mark Zuckerberg; Anthropic (Dario/Daniela Amodei, Krishna Rao,
