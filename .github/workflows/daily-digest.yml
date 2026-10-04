@@ -1,8 +1,6 @@
 name: Generate Daily Feed
 
 on:
-  schedule:
-    - cron: '0 22 * * *'  # UTC 22:00 = Beijing 06:00
   workflow_dispatch:
     inputs:
       x_llm:
@@ -40,6 +38,8 @@ permissions:
 
 jobs:
   generate:
+    # Disabled at the repository owner's request. Remove this guard to restore execution.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 75
 
